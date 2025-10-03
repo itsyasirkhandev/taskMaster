@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import type { Task, TaskWithId } from "@/lib/types";
 import { TaskForm, type TaskFormValues } from "@/components/task-form";
 import { TaskList } from "@/components/task-list";
@@ -20,6 +20,12 @@ export default function Home() {
   const { auth } = useFirebase();
   const firestore = useFirestore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth');
+    }
+  }, [user, loading, router]);
 
   const tasksQuery = useMemo(() => {
     if (!user || !firestore) return null;
@@ -60,17 +66,12 @@ export default function Home() {
     return { groupedTasks: grouped, allTasksEmpty: allEmpty };
   }, [tasks]);
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-background font-body text-foreground flex items-center justify-center">
         <p>Loading...</p>
       </div>
     );
-  }
-
-  if (!user) {
-    router.push('/auth');
-    return null; 
   }
 
   const handleAddTask = (data: TaskFormValues) => {
