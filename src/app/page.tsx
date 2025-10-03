@@ -27,6 +27,38 @@ export default function Home() {
   }, [user, firestore]);
 
   const { data: tasks, loading: tasksLoading } = useCollection(tasksQuery);
+  
+  const { groupedTasks, allTasksEmpty } = useMemo(() => {
+    const initialGroupedTasks = {
+      "Urgent & Important": [],
+      "Unurgent & Important": [],
+      "Urgent & Unimportant": [],
+      "Unurgent & Unimportant": [],
+    };
+
+    if (!tasks) {
+      return { groupedTasks: initialGroupedTasks, allTasksEmpty: true };
+    }
+
+    const mappedTasks = tasks.docs.map(d => ({
+      id: d.id, 
+      ...d.data(),
+      dueDate: (d.data().dueDate as Timestamp)?.toDate()
+    })).sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis()) as TaskWithId[];
+
+    const grouped = mappedTasks.reduce((acc, task) => {
+      const category = task.category;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(task);
+      return acc;
+    }, initialGroupedTasks as Record<string, TaskWithId[]>);
+
+    const allEmpty = Object.values(grouped).every(arr => arr.length === 0);
+
+    return { groupedTasks: grouped, allTasksEmpty: allEmpty };
+  }, [tasks]);
 
   if (loading) {
     return (
@@ -104,39 +136,6 @@ export default function Home() {
       errorEmitter.emit('permission-error', permissionError);
     });
   };
-
-  const { groupedTasks, allTasksEmpty } = useMemo(() => {
-    const initialGroupedTasks = {
-      "Urgent & Important": [],
-      "Unurgent & Important": [],
-      "Urgent & Unimportant": [],
-      "Unurgent & Unimportant": [],
-    };
-
-    if (!tasks) {
-      return { groupedTasks: initialGroupedTasks, allTasksEmpty: true };
-    }
-
-    const mappedTasks = tasks.docs.map(d => ({
-      id: d.id, 
-      ...d.data(),
-      dueDate: (d.data().dueDate as Timestamp)?.toDate()
-    })).sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis()) as TaskWithId[];
-
-    const grouped = mappedTasks.reduce((acc, task) => {
-      const category = task.category;
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category].push(task);
-      return acc;
-    }, initialGroupedTasks as Record<string, TaskWithId[]>);
-
-    const allEmpty = Object.values(grouped).every(arr => arr.length === 0);
-
-    return { groupedTasks: grouped, allTasksEmpty: allEmpty };
-  }, [tasks]);
-
 
   return (
     <div className="min-h-screen bg-background font-body text-foreground">
