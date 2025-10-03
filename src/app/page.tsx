@@ -105,15 +105,42 @@ export default function Home() {
     });
   };
 
-  const mappedTasks = tasks ? tasks.docs.map(d => ({
-    id: d.id, 
-    ...d.data(),
-    dueDate: (d.data().dueDate as Timestamp)?.toDate()
-  })).sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis()) as TaskWithId[] : [];
+  const { groupedTasks, allTasksEmpty } = useMemo(() => {
+    const initialGroupedTasks = {
+      "Urgent & Important": [],
+      "Unurgent & Important": [],
+      "Urgent & Unimportant": [],
+      "Unurgent & Unimportant": [],
+    };
+
+    if (!tasks) {
+      return { groupedTasks: initialGroupedTasks, allTasksEmpty: true };
+    }
+
+    const mappedTasks = tasks.docs.map(d => ({
+      id: d.id, 
+      ...d.data(),
+      dueDate: (d.data().dueDate as Timestamp)?.toDate()
+    })).sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis()) as TaskWithId[];
+
+    const grouped = mappedTasks.reduce((acc, task) => {
+      const category = task.category;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(task);
+      return acc;
+    }, initialGroupedTasks as Record<string, TaskWithId[]>);
+
+    const allEmpty = Object.values(grouped).every(arr => arr.length === 0);
+
+    return { groupedTasks: grouped, allTasksEmpty: allEmpty };
+  }, [tasks]);
+
 
   return (
     <div className="min-h-screen bg-background font-body text-foreground">
-       <header className="container mx-auto max-w-5xl px-4 py-4 flex justify-between items-center">
+       <header className="container mx-auto max-w-7xl px-4 py-4 flex justify-between items-center">
           <div></div>
           <div className="flex items-center gap-4">
             <Avatar>
@@ -123,20 +150,27 @@ export default function Home() {
             <Button variant="outline" onClick={() => auth.signOut()}>Sign Out</Button>
           </div>
         </header>
-      <main className="container mx-auto max-w-2xl px-4 py-12 md:py-20">
+      <main className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">TaskMaster</h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Master your day. Bring clarity to your work and peace of mind to your life. Add your first task below.
           </p>
         </div>
         
-        <div className="mt-12">
+        <div className="mt-12 max-w-2xl mx-auto">
           <TaskForm onTaskAdd={handleAddTask} />
         </div>
         
-        <div className="mt-8">
-          <TaskList tasks={mappedTasks} onTaskDelete={handleDeleteTask} onTaskToggle={handleToggleTask} onTaskEdit={handleEditTask} loading={tasksLoading} />
+        <div className="mt-12">
+          <TaskList 
+            groupedTasks={groupedTasks} 
+            allTasksEmpty={allTasksEmpty}
+            onTaskDelete={handleDeleteTask} 
+            onTaskToggle={handleToggleTask} 
+            onTaskEdit={handleEditTask} 
+            loading={tasksLoading} 
+          />
         </div>
       </main>
     </div>
