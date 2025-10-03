@@ -46,11 +46,16 @@ export default function Home() {
       return { groupedTasks: initialGroupedTasks, allTasksEmpty: true };
     }
 
-    const mappedTasks = tasks.docs.map(d => ({
-      id: d.id, 
-      ...d.data(),
-      dueDate: (d.data().dueDate as Timestamp)?.toDate()
-    })).sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis()) as TaskWithId[];
+    const mappedTasks = tasks.docs
+      .map(d => ({
+        id: d.id, 
+        ...d.data(),
+        dueDate: (d.data().dueDate as Timestamp)?.toDate(),
+        createdAt: d.data().createdAt as Timestamp | null,
+      }))
+      .filter(task => task.createdAt) // Ensure createdAt is not null
+      .sort((a,b) => a.createdAt!.toMillis() - b.createdAt!.toMillis()) as TaskWithId[];
+
 
     const grouped = mappedTasks.reduce((acc, task) => {
       const category = task.category;
@@ -132,7 +137,7 @@ export default function Home() {
       updatedAt: serverTimestamp(),
     };
     if (!data.dueDate) {
-      delete updatedTask.dueDate;
+      updatedTask.dueDate = undefined;
     }
     updateDoc(taskRef, updatedTask).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
