@@ -7,8 +7,10 @@ import {
 } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { auth } from "@/firebase";
+import { useFirebase } from "@/firebase/provider";
 import { Button } from "@/components/ui/button";
+import { doc, setDoc } from "firebase/firestore";
+import { useFirestore } from "@/firebase/provider";
 
 const GoogleIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48">
@@ -22,12 +24,25 @@ const GoogleIcon = () => (
 export default function AuthPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { auth } = useFirebase();
+  const firestore = useFirestore();
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
       const result: UserCredential = await signInWithPopup(auth, provider);
       const user = result.user;
+      
+      if (user && firestore) {
+        const userRef = doc(firestore, "users", user.uid);
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        }, { merge: true });
+      }
+
       toast({
         title: "Authentication Successful",
         description: `Welcome, ${user.displayName}!`,

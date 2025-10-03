@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster";
 import './globals.css';
-import { FirebaseProvider } from '@/firebase/provider';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'TaskMaster: Master Your Day with Ease',
@@ -21,9 +21,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <FirebaseProvider>
-          {children}
-        </FirebaseProvider>
+        <FirebaseClientProvider>
+            {children}
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

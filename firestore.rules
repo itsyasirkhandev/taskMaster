@@ -1,0 +1,64 @@
+/**
+ * @fileoverview Firestore Security Rules for the application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model.  Users can only
+ * read and write their own data.  All write operations are validated
+ * against the authenticated user's ID.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores public profile information for each user. The
+ *   {userId} in the path MUST match the `uid` field in the document.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed to protect privacy.
+ *
+ * Denormalization for Authorization:
+ * - The `/users/{userId}` document is structured so that the `uid` field inside
+ *   the document MUST match the `{userId}` in the path.  This allows for
+ *   fast and simple ownership checks without additional reads.
+ *
+ * Structural Segregation:
+ * - All user data is stored under the `/users/{userId}` collection to ensure
+ *   clear ownership and prevent accidental data leaks.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user profile documents.
+     * @path /users/{userId}
+     * @allow (create) Authenticated user can create their profile if the userId matches their auth.uid.
+     * @allow (get) Authenticated user can read their own profile data.
+     * @allow (update) Authenticated user can update their own profile data.
+     * @allow (delete) Authenticated user can delete their own profile data.
+     * @deny (create) Creating a profile with a mismatched userId.
+     * @deny (get) Reading another user's profile.
+     * @deny (update) Updating another user's profile.
+     * @deny (delete) Deleting another user's profile.
+     * @principle Enforces user-ownership for profile data and validates that profile data contains correct reference.
+     */
+    match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+
+      // Allow users to create their own profile, but enforce that the uid in the document matches the userId in the path
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.uid == userId;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

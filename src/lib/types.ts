@@ -1,5 +1,24 @@
+import { FieldValue, Timestamp } from "firebase/firestore";
+
 export type Task = {
-  id: string;
   description: string;
-  dueDate: Date;
+  dueDate: Date | FieldValue;
+  completed: boolean;
+  createdAt: FieldValue;
+  updatedAt: FieldValue;
+};
+
+export type TaskWithId = Omit<Task, 'dueDate' | 'createdAt' | 'updatedAt'> & {
+    id: string;
+    dueDate: Date;
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+};
+
+
+export type UserProfile = {
+    uid: string;
+    email: string;
+    displayName: string | null;
+    photoURL: string | null;
 };

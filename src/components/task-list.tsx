@@ -1,16 +1,31 @@
 "use client";
 
-import type { Task } from "@/lib/types";
+import type { TaskWithId } from "@/lib/types";
 import { TaskItem } from "@/components/task-item";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
+import { Skeleton } from "./ui/skeleton";
 
 interface TaskListProps {
-  tasks: Task[];
+  tasks: TaskWithId[];
   onTaskDelete: (id: string) => void;
+  onTaskToggle: (task: TaskWithId) => void;
+  loading: boolean;
 }
 
-export function TaskList({ tasks, onTaskDelete }: TaskListProps) {
+export function TaskList({ tasks, onTaskDelete, onTaskToggle, loading }: TaskListProps) {
+  if (loading) {
+     return (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold font-headline">Your Tasks</h2>
+         <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+         </div>
+      </div>
+     )
+  }
+
   if (tasks.length === 0) {
     return (
       <div className="text-center py-12 px-6 bg-card rounded-lg border-2 border-dashed">
@@ -28,7 +43,7 @@ export function TaskList({ tasks, onTaskDelete }: TaskListProps) {
       <h2 className="text-2xl font-bold font-headline">Your Tasks</h2>
       <ul role="list" className="space-y-4">
         {tasks.map((task) => (
-          <TaskItem key={task.id} task={task} onTaskDelete={onTaskDelete} />
+          <TaskItem key={task.id} task={task} onTaskDelete={onTaskDelete} onTaskToggle={onTaskToggle}/>
         ))}
       </ul>
     </div>
