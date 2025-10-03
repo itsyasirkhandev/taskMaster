@@ -23,6 +23,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import type { TaskWithId } from "@/lib/types"
 
@@ -30,8 +31,9 @@ const formSchema = z.object({
   description: z.string().min(3, {
     message: "Description must be at least 3 characters.",
   }),
-  dueDate: z.date({
-    required_error: "A due date is required.",
+  dueDate: z.date().optional(),
+  category: z.string({
+    required_error: "Please select a category.",
   }),
 })
 
@@ -50,6 +52,7 @@ export function EditTaskForm({ task, onTaskEdit, onClose }: EditTaskFormProps) {
     defaultValues: {
       description: task.description,
       dueDate: task.dueDate,
+      category: task.category,
     },
   })
 
@@ -80,10 +83,33 @@ export function EditTaskForm({ task, onTaskEdit, onClose }: EditTaskFormProps) {
         />
         <FormField
           control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Urgent & Important">Urgent & Important</SelectItem>
+                  <SelectItem value="Unurgent & Important">Unurgent & Important</SelectItem>
+                  <SelectItem value="Urgent & Unimportant">Urgent & Unimportant</SelectItem>
+                  <SelectItem value="Unurgent & Unimportant">Unurgent & Unimportant</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="dueDate"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Due Date</FormLabel>
+              <FormLabel>Due Date (Optional)</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>

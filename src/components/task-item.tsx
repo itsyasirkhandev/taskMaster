@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { EditTaskForm, type EditTaskFormValues } from "./edit-task-form";
 
 interface TaskItemProps {
@@ -52,9 +53,14 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onTaskEdit }: TaskI
               />
             <div className="space-y-2 flex-1">
               <label htmlFor={`task-${task.id}`} className={`font-medium text-card-foreground ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.description}</label>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="mr-2 h-4 w-4" />
-                <span>{format(task.dueDate, "PPP")}</span>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="outline">{task.category}</Badge>
+                {task.dueDate && (
+                  <div className="flex items-center">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span>{format(task.dueDate, "PPP")}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

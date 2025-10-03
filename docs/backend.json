@@ -44,6 +44,16 @@
           "type": "boolean",
           "description": "Whether the task is completed."
         },
+        "category": {
+          "type": "string",
+          "description": "The category of the task.",
+          "enum": [
+            "Urgent & Important",
+            "Unurgent & Important",
+            "Urgent & Unimportant",
+            "Unurgent & Unimportant"
+          ]
+        },
         "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -55,7 +65,7 @@
             "description": "The timestamp when the task was last updated."
         }
       },
-      "required": ["description", "dueDate", "completed"]
+      "required": ["description", "completed", "category"]
     }
   },
   "auth": {

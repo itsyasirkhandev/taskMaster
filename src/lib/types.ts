@@ -2,15 +2,16 @@ import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type Task = {
   description: string;
-  dueDate: Date | FieldValue;
+  dueDate?: Date | FieldValue;
   completed: boolean;
+  category: "Urgent & Important" | "Unurgent & Important" | "Urgent & Unimportant" | "Unurgent & Unimportant";
   createdAt: FieldValue;
   updatedAt: FieldValue;
 };
 
 export type TaskWithId = Omit<Task, 'dueDate' | 'createdAt' | 'updatedAt'> & {
     id: string;
-    dueDate: Date;
+    dueDate?: Date;
     createdAt: Timestamp;
     updatedAt: Timestamp;
 };
