@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import type { Task } from "@/lib/types";
 import { TaskForm, type TaskFormValues } from "@/components/task-form";
 import { TaskList } from "@/components/task-list";
+import { useUser } from "@/firebase/auth/use-user";
+import { useRouter } from "next/navigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { auth } from "@/firebase";
 
 // A helper to safely use crypto.randomUUID only on the client
 const generateUUID = () => {
@@ -16,10 +21,17 @@ const generateUUID = () => {
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
+  const { user, loading } = useUser();
+  const router = useRouter();
 
   useEffect(() => {
-    setIsMounted(true);
+    if (!loading && !user) {
+      router.push('/auth');
+    }
+  }, [user, loading, router]);
+
+
+  useEffect(() => {
     // Initialize with some example tasks only on the client
     setTasks([
       { id: generateUUID(), description: "Read a book for 30 minutes", dueDate: new Date() },
@@ -40,24 +52,26 @@ export default function Home() {
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
-  // Avoid rendering the list on the server to prevent hydration mismatch with UUIDs
-  if (!isMounted) {
+  if (loading || !user) {
     return (
-      <div className="min-h-screen bg-background font-body text-foreground">
-        <main className="container mx-auto max-w-2xl px-4 py-12 md:py-20">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">TaskMaster</h1>
-            <p className="text-lg text-muted-foreground">
-              Master your day. Bring clarity to your work and peace of mind to your life. Add your first task below.
-            </p>
-          </div>
-        </main>
+      <div className="min-h-screen bg-background font-body text-foreground flex items-center justify-center">
+        <p>Loading...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background font-body text-foreground">
+       <header className="container mx-auto max-w-5xl px-4 py-4 flex justify-between items-center">
+          <div></div>
+          <div className="flex items-center gap-4">
+            <Avatar>
+              <AvatarImage src={user.photoURL ?? ''} />
+              <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <Button variant="outline" onClick={() => auth.signOut()}>Sign Out</Button>
+          </div>
+        </header>
       <main className="container mx-auto max-w-2xl px-4 py-12 md:py-20">
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">TaskMaster</h1>

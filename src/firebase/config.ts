@@ -1,5 +1,5 @@
 // @/firebase/config.ts
-import { FirebaseOptions, initializeApp } from 'firebase/app';
+import { FirebaseOptions } from 'firebase/app';
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,7 +10,4 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-export default app;
+export { firebaseConfig };
