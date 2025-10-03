@@ -1,53 +1,81 @@
+/**
+ * @fileoverview Firestore Security Rules for Prototyping.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model, ensuring that users can only
+ * access their own data. It prioritizes security and simplicity, and only validates
+ * critical aspects of the data to allow for flexible schema changes during prototyping.
+ *
+ * Data Structure:
+ * - `/users/{userId}`: Stores public information about a user, accessible only to the
+ *   authenticated user with matching `userId`.
+ * - `/users/{userId}/tasks/{taskId}`: Stores tasks for a specific user, only accessible
+ *   to the user with the matching `userId`.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own user profiles.
+ * - Users can only access tasks associated with their user ID.
+ * - Data validation is minimal, focusing on relational integrity (e.g., userId matching
+ *   the document ID).
+ *
+ * Denormalization for Authorization:
+ * - The security rules rely on the `userId` in the path matching the authenticated
+ *   user's UID to ensure ownership. This avoids the need for complex queries or
+ *   additional reads.
+ *
+ * Structural Segregation:
+ * - User profiles and tasks are stored under the `/users/{userId}` collection to
+ *   enforce privacy and ownership.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Enforces access control for user profiles. Only the authenticated user can read and write their own profile.
      * @path /users/{userId}
-     * @allow (create) User with matching UID can create their profile.
-     * @allow (get) User with matching UID can read their profile.
-     * @allow (update) User with matching UID can update their profile.
-     * @allow (delete) User with matching UID can delete their profile.
-     * @deny (create) User cannot create a profile with a different UID.
-     * @deny (update) User cannot update someone else's profile.
-     * @deny (delete) User cannot delete someone else's profile.
-     * @principle Enforces document ownership for user profiles.
+     * @allow (get, update, delete) User with uid "user123" can access /users/user123.
+     * @allow (create) User with uid "user123" can create the profile /users/user123.
+     * @deny (get, update, delete) User with uid "user456" cannot access /users/user123.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
     /**
-     * @description Controls access to task documents within a user's profile.
+     * @description Enforces access control for tasks under a specific user. Only the authenticated user can read and write their own tasks.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) User with matching UID can create tasks under their profile.
-     * @allow (get) User with matching UID can read tasks under their profile.
-     * @allow (update) User with matching UID can update tasks under their profile.
-     * @allow (delete) User with matching UID can delete tasks under their profile.
-     * @deny (create) User cannot create tasks under someone else's profile.
-     * @deny (update) User cannot update someone else's profile's tasks.
-     * @deny (delete) User cannot delete someone else's profile's tasks.
-     * @principle Enforces strict user ownership for tasks.
+     * @allow (create, get, update, delete, list) User with uid "user123" can access /users/user123/tasks/task456.
+     * @deny (create, get, update, delete, list) User with uid "user456" cannot access /users/user123/tasks/task456.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/tasks/{taskId} {
-      allow get: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
-    }
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
     }
   }
 }
