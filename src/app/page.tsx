@@ -76,12 +76,15 @@ export default function Home() {
 
   const handleAddTask = (data: TaskFormValues) => {
     if (!tasksQuery) return;
-    const newTask: Task = {
+    const newTask: Partial<Task> = {
       ...data,
       completed: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
+    if (!data.dueDate) {
+      delete newTask.dueDate;
+    }
     addDoc(tasksQuery, newTask).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
         path: tasksQuery.path,
@@ -124,10 +127,13 @@ export default function Home() {
   const handleEditTask = (id: string, data: EditTaskFormValues) => {
     if (!user || !firestore) return;
     const taskRef = doc(firestore, "users", user.uid, "tasks", id);
-    const updatedTask = {
+    const updatedTask: Partial<Task> = {
       ...data,
       updatedAt: serverTimestamp(),
     };
+    if (!data.dueDate) {
+      delete updatedTask.dueDate;
+    }
     updateDoc(taskRef, updatedTask).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
         path: taskRef.path,
