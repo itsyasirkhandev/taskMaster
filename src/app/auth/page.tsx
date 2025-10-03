@@ -11,6 +11,9 @@ import { useFirebase } from "@/firebase/provider";
 import { Button } from "@/components/ui/button";
 import { doc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
+import type { UserProfile } from "@/lib/types";
 
 const GoogleIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48">
@@ -35,12 +38,20 @@ export default function AuthPage() {
       
       if (user && firestore) {
         const userRef = doc(firestore, "users", user.uid);
-        await setDoc(userRef, {
+        const userProfileData: UserProfile = {
           uid: user.uid,
-          email: user.email,
+          email: user.email!,
           displayName: user.displayName,
           photoURL: user.photoURL,
-        }, { merge: true });
+        };
+        setDoc(userRef, userProfileData, { merge: true }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+              path: userRef.path,
+              operation: 'update',
+              requestResourceData: userProfileData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
       }
 
       toast({
