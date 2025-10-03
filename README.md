@@ -11,8 +11,8 @@ TaskMaster is a modern, responsive task management application built with Next.j
 **Main Dashboard**
 ![TaskMaster Dashboard](https://i.postimg.cc/hGwjfvMz/Screenshot-3-10-2025-101157-basic-taskmanagment-netlify-app.jpg)
 
-**Authentication Page**
-![Task Creation](https://i.postimg.cc/yN5dkxn1/Screenshot-3-10-2025-101517-basic-taskmanagment-netlify-app.jpg)
+**Task Management**
+![Task Management](https://i.postimg.cc/yN5dkxn1/Screenshot-3-10-2025-101517-basic-taskmanagment-netlify-app.jpg)
 
 
 ## Features
@@ -82,5 +82,5 @@ To get a local copy up and running, follow these simple steps.
 
 This project was created by **Yasir Khan**.
 
--   **Portfolio**: [yasir.qzz.io](https://yasir.qzz.io)
--   **GitHub**: [@yasir-kh](https://github.com/yasir-kh)
+-   **Portfolio**: [https://yasir.qzz.io](https://yasir.qzz.io)
+-   **GitHub**: [@itsyasirkhandev](https://github.com/itsyasirkhandev)
