@@ -13,6 +13,7 @@ import { useCollection } from "@/firebase/firestore/use-collection";
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, Timestamp } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import type { EditTaskFormValues } from "@/components/edit-task-form";
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -87,11 +88,28 @@ export default function Home() {
     });
   };
 
+  const handleEditTask = (id: string, data: EditTaskFormValues) => {
+    if (!user || !firestore) return;
+    const taskRef = doc(firestore, "users", user.uid, "tasks", id);
+    const updatedTask = {
+      ...data,
+      updatedAt: serverTimestamp(),
+    };
+    updateDoc(taskRef, updatedTask).catch(async (serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: taskRef.path,
+        operation: 'update',
+        requestResourceData: updatedTask,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    });
+  };
+
   const mappedTasks = tasks ? tasks.docs.map(d => ({
     id: d.id, 
     ...d.data(),
     dueDate: (d.data().dueDate as Timestamp)?.toDate()
-  })) as TaskWithId[] : [];
+  })).sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis()) as TaskWithId[] : [];
 
   return (
     <div className="min-h-screen bg-background font-body text-foreground">
@@ -118,7 +136,7 @@ export default function Home() {
         </div>
         
         <div className="mt-8">
-          <TaskList tasks={mappedTasks} onTaskDelete={handleDeleteTask} onTaskToggle={handleToggleTask} loading={tasksLoading} />
+          <TaskList tasks={mappedTasks} onTaskDelete={handleDeleteTask} onTaskToggle={handleToggleTask} onTaskEdit={handleEditTask} loading={tasksLoading} />
         </div>
       </main>
     </div>

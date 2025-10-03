@@ -4,15 +4,17 @@ import type { TaskWithId } from "@/lib/types";
 import { TaskItem } from "@/components/task-item";
 import { CheckCircle2 } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
+import type { EditTaskFormValues } from "./edit-task-form";
 
 interface TaskListProps {
   tasks: TaskWithId[];
   onTaskDelete: (id: string) => void;
   onTaskToggle: (task: TaskWithId) => void;
+  onTaskEdit: (id: string, data: EditTaskFormValues) => void;
   loading: boolean;
 }
 
-export function TaskList({ tasks, onTaskDelete, onTaskToggle, loading }: TaskListProps) {
+export function TaskList({ tasks, onTaskDelete, onTaskToggle, onTaskEdit, loading }: TaskListProps) {
   if (loading) {
      return (
       <div className="space-y-4">
@@ -43,7 +45,7 @@ export function TaskList({ tasks, onTaskDelete, onTaskToggle, loading }: TaskLis
       <h2 className="text-2xl font-bold font-headline">Your Tasks</h2>
       <ul role="list" className="space-y-4">
         {tasks.map((task) => (
-          <TaskItem key={task.id} task={task} onTaskDelete={onTaskDelete} onTaskToggle={onTaskToggle}/>
+          <TaskItem key={task.id} task={task} onTaskDelete={onTaskDelete} onTaskToggle={onTaskToggle} onTaskEdit={onTaskEdit}/>
         ))}
       </ul>
     </div>
