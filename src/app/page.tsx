@@ -14,6 +14,7 @@ import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, Timesta
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import type { EditTaskFormValues } from "@/components/edit-task-form";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -52,6 +53,7 @@ export default function Home() {
         ...d.data(),
         dueDate: (d.data().dueDate as Timestamp)?.toDate(),
         createdAt: d.data().createdAt as Timestamp | null,
+        subtasks: d.data().subtasks || [],
       }))
       .filter(task => task.createdAt) // Ensure createdAt is not null
       .sort((a,b) => a.createdAt!.toMillis() - b.createdAt!.toMillis()) as TaskWithId[];
@@ -81,15 +83,22 @@ export default function Home() {
 
   const handleAddTask = (data: TaskFormValues) => {
     if (!tasksQuery) return;
-    const newTask: Partial<Task> = {
+    const newTask: Partial<Task> & { subtasks?: { id: string; description: string; completed: boolean }[] } = {
       ...data,
       completed: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      subtasks: data.subtasks 
+        ? data.subtasks
+            .filter(sub => sub.description.trim() !== '')
+            .map(sub => ({ ...sub, id: uuidv4(), completed: false }))
+        : []
     };
+
     if (!data.dueDate) {
       delete newTask.dueDate;
     }
+
     addDoc(tasksQuery, newTask).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
         path: tasksQuery.path,
@@ -115,10 +124,40 @@ export default function Home() {
   const handleToggleTask = (task: TaskWithId) => {
     if (!user || !firestore) return;
     const taskRef = doc(firestore, "users", user.uid, "tasks", task.id);
+    
+    const allSubtasksCompleted = task.subtasks && task.subtasks.every(sub => sub.completed);
+    const newCompletedStatus = task.subtasks && task.subtasks.length > 0 ? allSubtasksCompleted : !task.completed;
+
     const updatedTask = {
-      completed: !task.completed,
+      completed: newCompletedStatus,
       updatedAt: serverTimestamp(),
     };
+    updateDoc(taskRef, updatedTask).catch(async (serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: taskRef.path,
+        operation: 'update',
+        requestResourceData: updatedTask,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    });
+  };
+
+  const handleToggleSubtask = (task: TaskWithId, subtaskId: string) => {
+    if (!user || !firestore) return;
+    const taskRef = doc(firestore, "users", user.uid, "tasks", task.id);
+    
+    const newSubtasks = task.subtasks.map(sub => 
+      sub.id === subtaskId ? { ...sub, completed: !sub.completed } : sub
+    );
+
+    const allSubtasksCompleted = newSubtasks.every(sub => sub.completed);
+    
+    const updatedTask = {
+      subtasks: newSubtasks,
+      completed: allSubtasksCompleted,
+      updatedAt: serverTimestamp(),
+    };
+
     updateDoc(taskRef, updatedTask).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
         path: taskRef.path,
@@ -136,7 +175,7 @@ export default function Home() {
       ...data,
       updatedAt: serverTimestamp(),
     };
-    if (!data.dueDate) {
+    if (data.dueDate === undefined || data.dueDate === null) {
       updatedTask.dueDate = undefined;
     }
     updateDoc(taskRef, updatedTask).catch(async (serverError) => {
@@ -179,6 +218,7 @@ export default function Home() {
             allTasksEmpty={allTasksEmpty}
             onTaskDelete={handleDeleteTask} 
             onTaskToggle={handleToggleTask} 
+            onSubtaskToggle={handleToggleSubtask}
             onTaskEdit={handleEditTask} 
             loading={tasksLoading} 
           />

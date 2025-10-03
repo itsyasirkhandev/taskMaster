@@ -63,6 +63,28 @@
             "type": "string",
             "format": "date-time",
             "description": "The timestamp when the task was last updated."
+        },
+        "subtasks": {
+          "type": "array",
+          "description": "A list of sub-tasks for the main task.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the subtask."
+              },
+              "description": {
+                "type": "string",
+                "description": "The content of the subtask."
+              },
+              "completed": {
+                "type": "boolean",
+                "description": "Whether the subtask is completed."
+              }
+            },
+            "required": ["id", "description", "completed"]
+          }
         }
       },
       "required": ["description", "completed", "category"]

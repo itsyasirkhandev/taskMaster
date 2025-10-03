@@ -12,6 +12,7 @@ interface TaskListProps {
   allTasksEmpty: boolean;
   onTaskDelete: (id: string) => void;
   onTaskToggle: (task: TaskWithId) => void;
+  onSubtaskToggle: (task: TaskWithId, subtaskId: string) => void;
   onTaskEdit: (id: string, data: EditTaskFormValues) => void;
   loading: boolean;
 }
@@ -40,7 +41,7 @@ const categoryConfig: Record<string, { title: string; description: string; color
 }
 
 
-export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskToggle, onTaskEdit, loading }: TaskListProps) {
+export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit, loading }: TaskListProps) {
   if (loading) {
      return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -85,7 +86,7 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
           {tasks.length > 0 ? (
             <ul role="list" className="space-y-4">
               {tasks.map((task) => (
-                <TaskItem key={task.id} task={task} onTaskDelete={onTaskDelete} onTaskToggle={onTaskToggle} onTaskEdit={onTaskEdit}/>
+                <TaskItem key={task.id} task={task} onTaskDelete={onTaskDelete} onTaskToggle={onTaskToggle} onSubtaskToggle={onSubtaskToggle} onTaskEdit={onTaskEdit}/>
               ))}
             </ul>
           ) : (
