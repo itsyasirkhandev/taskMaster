@@ -54,7 +54,7 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
       <Card className={`transition-all hover:shadow-md ${task.completed ? 'bg-muted/50' : 'bg-card'}`}>
         <CardContent className="p-4 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4 flex-1">
+            <div className="flex items-start gap-4 flex-1 overflow-hidden">
                <Checkbox
                   id={`task-${task.id}`}
                   checked={task.completed}
@@ -62,8 +62,8 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
                   className="mt-1"
                   aria-label={`Mark task ${task.completed ? 'incomplete' : 'complete'}`}
                 />
-              <div className="space-y-2 flex-1">
-                <label htmlFor={`task-${task.id}`} className={`font-medium text-card-foreground ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.description}</label>
+              <div className="space-y-2 flex-1 overflow-hidden">
+                <label htmlFor={`task-${task.id}`} className={`font-medium text-card-foreground break-words ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.description}</label>
                 {task.dueDate && (
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Calendar className="mr-2 h-4 w-4" />
@@ -130,7 +130,7 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
                     />
                     <label
                         htmlFor={`subtask-${subtask.id}`}
-                        className={`text-sm flex-1 ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
+                        className={`text-sm flex-1 break-words ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
                     >
                         {subtask.description}
                     </label>

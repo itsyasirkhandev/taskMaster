@@ -81,7 +81,6 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
         <div key={category} className={`space-y-4 p-4 rounded-lg border-2 border-dashed h-full ${config.colors}`}>
           <div className="text-center">
             <h3 className="text-lg font-bold font-headline">{config.title}</h3>
-            <p className="text-sm text-muted-foreground">{config.description}</p>
           </div>
           {tasks.length > 0 ? (
             <ul role="list" className="space-y-4">
