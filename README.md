@@ -4,7 +4,7 @@ TaskMaster is a modern, responsive task management application built with Next.j
 
 ## Live Demo
 
-**[🚀 View Live Demo](https://basic-taskmanagment.netlify.app/)**
+**[🚀 View Live Demo](https://taskmasteryk.netlify.app/)**
 
 ## Screenshots
 
