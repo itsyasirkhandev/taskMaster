@@ -25,6 +25,7 @@ export default function Home() {
   const firestore = useFirestore();
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [optimisticTasks, setOptimisticTasks] = useState<TaskWithId[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -47,11 +48,11 @@ export default function Home() {
       "Unurgent & Unimportant": [],
     };
 
-    if (!tasks) {
+    if (!tasks && optimisticTasks.length === 0) {
       return { groupedTasks: initialGroupedTasks, allTasksEmpty: true };
     }
 
-    const mappedTasks = tasks.docs
+    const liveTasks = tasks?.docs
       .map(d => ({
         id: d.id, 
         ...d.data(),
@@ -59,11 +60,20 @@ export default function Home() {
         createdAt: d.data().createdAt as Timestamp | null,
         subtasks: d.data().subtasks || [],
       }))
-      .filter(task => task.createdAt) // Ensure createdAt is not null
-      .sort((a,b) => a.createdAt!.toMillis() - b.createdAt!.toMillis()) as TaskWithId[];
+      .filter(task => task.createdAt) as TaskWithId[] || [];
+    
+    const combinedTasks = [...liveTasks];
+    optimisticTasks.forEach(optTask => {
+      if (!combinedTasks.find(t => t.id === optTask.id)) {
+        combinedTasks.push(optTask);
+      }
+    });
 
+    const sortedTasks = combinedTasks
+      .filter(task => task.createdAt)
+      .sort((a,b) => a.createdAt!.toMillis() - b.createdAt!.toMillis());
 
-    const grouped = mappedTasks.reduce((acc, task) => {
+    const grouped = sortedTasks.reduce((acc, task) => {
       const category = task.category;
       if (!acc[category]) {
         acc[category] = [];
@@ -75,7 +85,7 @@ export default function Home() {
     const allEmpty = Object.values(grouped).every(arr => arr.length === 0);
 
     return { groupedTasks: grouped, allTasksEmpty: allEmpty };
-  }, [tasks]);
+  }, [tasks, optimisticTasks]);
 
   if (loading || !user) {
     return (
@@ -85,33 +95,57 @@ export default function Home() {
     );
   }
 
-  const handleAddTask = (data: TaskFormValues) => {
+  const handleAddTask = async (data: TaskFormValues) => {
     if (!tasksQuery) return;
-    const newTask: Partial<Task> & { subtasks?: { id: string; description: string; completed: boolean }[] } = {
-      ...data,
+
+    const optimisticId = uuidv4();
+    const now = new Date();
+
+    const optimisticTask: TaskWithId = {
+      id: optimisticId,
+      description: data.description,
+      category: data.category as TaskWithId['category'],
       completed: false,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      dueDate: data.dueDate,
       subtasks: data.subtasks 
         ? data.subtasks
             .filter(sub => sub.description.trim() !== '')
             .map(sub => ({ ...sub, id: uuidv4(), completed: false }))
-        : []
+        : [],
+      createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now),
     };
+    
+    setOptimisticTasks(prev => [...prev, optimisticTask]);
+    setIsAddTaskDialogOpen(false);
 
-    if (!data.dueDate) {
-      delete (newTask as any).dueDate;
+    const newTask: Partial<Task> & { subtasks?: { id: string; description: string; completed: boolean }[] } = {
+      description: data.description,
+      category: data.category,
+      completed: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      subtasks: optimisticTask.subtasks,
+    };
+    
+    if (data.dueDate) {
+        newTask.dueDate = data.dueDate;
     }
 
-    addDoc(tasksQuery, newTask).catch(async (serverError) => {
+    try {
+      const docRef = await addDoc(tasksQuery, newTask);
+      // Replace optimistic task with the real one from Firestore listener
+      setOptimisticTasks(prev => prev.filter(t => t.id !== optimisticId));
+    } catch (serverError) {
+      // Rollback optimistic update on error
+      setOptimisticTasks(prev => prev.filter(t => t.id !== optimisticId));
       const permissionError = new FirestorePermissionError({
         path: tasksQuery.path,
         operation: 'create',
         requestResourceData: newTask,
       });
       errorEmitter.emit('permission-error', permissionError);
-    });
-    setIsAddTaskDialogOpen(false);
+    }
   };
 
   const handleDeleteTask = (id: string) => {
@@ -238,7 +272,7 @@ export default function Home() {
             onTaskToggle={handleToggleTask} 
             onSubtaskToggle={handleToggleSubtask}
             onTaskEdit={handleEditTask} 
-            loading={tasksLoading} 
+            loading={tasksLoading && optimisticTasks.length === 0} 
           />
         </div>
       </main>
