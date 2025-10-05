@@ -17,6 +17,7 @@ import type { EditTaskFormValues } from "@/components/edit-task-form";
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
+import { Loader } from "@/components/loader";
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -79,7 +80,7 @@ export default function Home() {
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-background font-body text-foreground flex items-center justify-center">
-        <p>Loading...</p>
+        <Loader className="h-12 w-12" />
       </div>
     );
   }
@@ -99,7 +100,7 @@ export default function Home() {
     };
 
     if (!data.dueDate) {
-      delete newTask.dueDate;
+      delete (newTask as any).dueDate;
     }
 
     addDoc(tasksQuery, newTask).catch(async (serverError) => {
@@ -180,7 +181,7 @@ export default function Home() {
       updatedAt: serverTimestamp(),
     };
     if (data.dueDate === undefined || data.dueDate === null) {
-      updatedTask.dueDate = undefined;
+      (updatedTask as any).dueDate = null;
     }
     updateDoc(taskRef, updatedTask).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
