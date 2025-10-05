@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import type { Task, TaskWithId } from "@/lib/types";
 import { TaskForm, type TaskFormValues } from "@/components/task-form";
 import { TaskList } from "@/components/task-list";
@@ -15,12 +15,15 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import type { EditTaskFormValues } from "@/components/edit-task-form";
 import { v4 as uuidv4 } from 'uuid';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
 
 export default function Home() {
   const { user, loading } = useUser();
   const { auth } = useFirebase();
   const firestore = useFirestore();
   const router = useRouter();
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -107,6 +110,7 @@ export default function Home() {
       });
       errorEmitter.emit('permission-error', permissionError);
     });
+    setIsAddTaskDialogOpen(false);
   };
 
   const handleDeleteTask = (id: string) => {
@@ -191,7 +195,24 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background font-body text-foreground">
        <header className="container mx-auto max-w-7xl px-4 py-4 flex justify-between items-center">
-          <div></div>
+          <div className="flex items-center gap-4">
+            <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Task
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add a New Task</DialogTitle>
+                </DialogHeader>
+                <div className="pt-4">
+                  <TaskForm onTaskAdd={handleAddTask} />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
           <div className="flex items-center gap-4">
             <Avatar>
               <AvatarImage src={user.photoURL ?? ''} />
@@ -206,10 +227,6 @@ export default function Home() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Master your day. Bring clarity to your work and peace of mind to your life. Add your first task below.
           </p>
-        </div>
-        
-        <div className="mt-12 max-w-2xl mx-auto">
-          <TaskForm onTaskAdd={handleAddTask} />
         </div>
         
         <div className="mt-12">
