@@ -134,10 +134,8 @@ export default function Home() {
 
     try {
       const docRef = await addDoc(tasksQuery, newTask);
-      // Replace optimistic task with the real one from Firestore listener
       setOptimisticTasks(prev => prev.filter(t => t.id !== optimisticId));
     } catch (serverError) {
-      // Rollback optimistic update on error
       setOptimisticTasks(prev => prev.filter(t => t.id !== optimisticId));
       const permissionError = new FirestorePermissionError({
         path: tasksQuery.path,
@@ -229,7 +227,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background font-body text-foreground">
-       <header className="container mx-auto max-w-7xl px-4 py-4 flex justify-between items-center">
+       <header className="container mx-auto max-w-7xl px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl font-headline font-bold tracking-tight">TaskMaster</h1>
+            <p className="text-sm text-muted-foreground">
+              Master your day. Bring clarity to your work.
+            </p>
+          </div>
           <div className="flex items-center gap-4">
             <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
               <DialogTrigger asChild>
@@ -247,8 +251,6 @@ export default function Home() {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
-          <div className="flex items-center gap-4">
             <Avatar>
               <AvatarImage src={user.photoURL ?? ''} />
               <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
@@ -257,14 +259,7 @@ export default function Home() {
           </div>
         </header>
       <main className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">TaskMaster</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Master your day. Bring clarity to your work and peace of mind to your life. Add your first task below.
-          </p>
-        </div>
-        
-        <div className="mt-12">
+        <div className="mt-2">
           <TaskList 
             groupedTasks={groupedTasks} 
             allTasksEmpty={allTasksEmpty}

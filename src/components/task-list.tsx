@@ -17,25 +17,21 @@ interface TaskListProps {
   loading: boolean;
 }
 
-const categoryConfig: Record<string, { title: string; description: string; colors: string }> = {
+const categoryConfig: Record<string, { title: string; colors: string }> = {
   "Urgent & Important": {
     title: "Urgent & Important",
-    description: "Crises, deadlines, problems",
     colors: "border-destructive/50",
   },
   "Unurgent & Important": {
     title: "Not Urgent & Important",
-    description: "Relationship building, new opportunities",
     colors: "border-primary/50",
   },
   "Urgent & Unimportant": {
     title: "Urgent & Not Important",
-    description: "Some meetings, some mails, interruptions",
     colors: "border-yellow-500/50",
   },
   "Unurgent & Unimportant": {
     title: "Not Urgent & Not Important",
-    description: "Time wasters, pleasant activities",
     colors: "border-muted-foreground/50",
   },
 }
@@ -44,12 +40,11 @@ const categoryConfig: Record<string, { title: string; description: string; color
 export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit, loading }: TaskListProps) {
   if (loading) {
      return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {Object.keys(groupedTasks).map(category => (
           <Card key={category}>
             <CardHeader>
               <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
             </CardHeader>
             <CardContent className="space-y-4">
               <Skeleton className="h-20 w-full" />
@@ -74,7 +69,7 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 items-start">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
       {Object.entries(groupedTasks).map(([category, tasks]) => {
         const config = categoryConfig[category];
         return (
