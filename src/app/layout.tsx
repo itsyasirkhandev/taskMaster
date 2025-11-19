@@ -4,8 +4,8 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'TaskMaster: Master Your Day with Ease',
-  description: 'Effortlessly create, manage, and delete your tasks with TaskMaster. Our clean and intuitive interface helps you stay organized and productive.',
+  title: 'IUUtask: Organize Your Tasks with Ease',
+  description: 'Effortlessly create, manage, and delete your tasks with IUUtask. Our clean and intuitive interface helps you stay organized and productive.',
 };
 
 export default function RootLayout({

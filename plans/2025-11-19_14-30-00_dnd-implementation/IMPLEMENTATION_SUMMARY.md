@@ -94,8 +94,4 @@ To verify the implementation:
 4. `src/app/page.tsx` - Added reorder logic
 5. `src/components/sortable-task-item.tsx` - NEW wrapper component
 
-### Server Running
 
-Development server is running at: http://localhost:9002
-
-You can now test the drag-and-drop functionality in your browser!

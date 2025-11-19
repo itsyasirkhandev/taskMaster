@@ -1,4 +1,4 @@
-# **App Name**: TaskMaster
+# **App Name**: IUUtask
 
 ## Core Features:
 

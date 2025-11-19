@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-TaskMaster is a Next.js 15 task management application implementing the Eisenhower Matrix (4-quadrant prioritization system). Built with Firebase Authentication & Firestore, ShadCN UI, and TypeScript. The app features real-time task updates, optimistic UI, and Google GenKit AI integration.
+IUUtask is a Next.js 15 task management application implementing the Eisenhower Matrix (4-quadrant prioritization system). Built with Firebase Authentication & Firestore, ShadCN UI, and TypeScript. The app features real-time task updates, optimistic UI, and Google GenKit AI integration.
 
 ## Development Commands
 
