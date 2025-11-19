@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import type { TaskWithId } from "@/lib/types";
 import { TaskItem } from "@/components/task-item";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 import type { EditTaskFormValues } from "./edit-task-form";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Button } from "./ui/button";
+import { QuickTaskForm } from "./quick-task-form";
+import type { TaskFormValues } from "./task-form";
 
 interface TaskListProps {
   groupedTasks: Record<string, TaskWithId[]>;
@@ -14,6 +19,7 @@ interface TaskListProps {
   onTaskToggle: (task: TaskWithId) => void;
   onSubtaskToggle: (task: TaskWithId, subtaskId: string) => void;
   onTaskEdit: (id: string, data: EditTaskFormValues) => void;
+  onTaskAdd: (data: TaskFormValues) => void;
   loading: boolean;
 }
 
@@ -37,7 +43,22 @@ const categoryConfig: Record<string, { title: string; colors: string }> = {
 }
 
 
-export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit, loading }: TaskListProps) {
+export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit, onTaskAdd, loading }: TaskListProps) {
+  const [dialogStates, setDialogStates] = useState<Record<string, boolean>>({
+    "Urgent & Important": false,
+    "Unurgent & Important": false,
+    "Urgent & Unimportant": false,
+    "Unurgent & Unimportant": false,
+  });
+
+  const handleDialogChange = (category: string, isOpen: boolean) => {
+    setDialogStates(prev => ({ ...prev, [category]: isOpen }));
+  };
+
+  const handleTaskAdd = (category: string) => (data: TaskFormValues) => {
+    onTaskAdd(data);
+    handleDialogChange(category, false);
+  };
   if (loading) {
      return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -74,8 +95,24 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
         const config = categoryConfig[category];
         return (
         <div key={category} className={`space-y-4 p-4 rounded-lg border-2 border-dashed h-full ${config.colors}`}>
-          <div className="text-center">
+          <div className="text-center space-y-3">
             <h3 className="text-lg font-bold font-headline">{config.title}</h3>
+            <Dialog open={dialogStates[category]} onOpenChange={(isOpen) => handleDialogChange(category, isOpen)}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Task
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add Task to {config.title}</DialogTitle>
+                </DialogHeader>
+                <div className="pt-4">
+                  <QuickTaskForm onTaskAdd={handleTaskAdd(category)} defaultCategory={category} />
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
           {tasks.length > 0 ? (
             <ul role="list" className="space-y-4">

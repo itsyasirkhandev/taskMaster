@@ -267,6 +267,7 @@ export default function Home() {
             onTaskToggle={handleToggleTask} 
             onSubtaskToggle={handleToggleSubtask}
             onTaskEdit={handleEditTask} 
+            onTaskAdd={handleAddTask}
             loading={tasksLoading && optimisticTasks.length === 0} 
           />
         </div>
