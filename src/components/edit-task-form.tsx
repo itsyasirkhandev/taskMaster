@@ -1,10 +1,11 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useFieldArray } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, Save } from "lucide-react"
+import { CalendarIcon, Save, Plus, X } from "lucide-react"
+import { v4 as uuidv4 } from "uuid"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import type { TaskWithId } from "@/lib/types"
 
+const subtaskSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  completed: z.boolean(),
+});
+
 const formSchema = z.object({
   description: z.string().min(3, {
     message: "Description must be at least 3 characters.",
@@ -35,6 +42,7 @@ const formSchema = z.object({
   category: z.string({
     required_error: "Please select a category.",
   }),
+  subtasks: z.array(subtaskSchema).optional()
 })
 
 export type EditTaskFormValues = z.infer<typeof formSchema>
@@ -53,8 +61,14 @@ export function EditTaskForm({ task, onTaskEdit, onClose }: EditTaskFormProps) {
       description: task.description,
       dueDate: task.dueDate,
       category: task.category,
+      subtasks: task.subtasks || [],
     },
   })
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "subtasks",
+  });
 
   function onSubmit(data: EditTaskFormValues) {
     onTaskEdit(data);
@@ -145,6 +159,46 @@ export function EditTaskForm({ task, onTaskEdit, onClose }: EditTaskFormProps) {
             </FormItem>
           )}
         />
+        
+        <div className="space-y-4">
+          <FormLabel>Sub-tasks (Optional)</FormLabel>
+          {fields.map((field, index) => (
+             <FormField
+                key={field.id}
+                control={form.control}
+                name={`subtasks.${index}.description`}
+                render={({ field: subtaskField }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-2">
+                       <FormControl>
+                         <Input {...subtaskField} placeholder={`Sub-task ${index + 1}`} />
+                       </FormControl>
+                       <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          className="shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                       </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+             />
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => append({ id: uuidv4(), description: "", completed: false })}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Sub-task
+          </Button>
+        </div>
+
         <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
             <Button type="submit">

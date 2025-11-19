@@ -208,13 +208,28 @@ export default function Home() {
   const handleEditTask = (id: string, data: EditTaskFormValues) => {
     if (!user || !firestore) return;
     const taskRef = doc(firestore, "users", user.uid, "tasks", id);
+    
+    const processedSubtasks = data.subtasks
+      ?.filter(sub => sub.description.trim() !== '')
+      .map(sub => ({
+        id: sub.id,
+        description: sub.description,
+        completed: sub.completed
+      })) || [];
+    
     const updatedTask: Partial<Task> = {
-      ...data,
+      description: data.description,
+      category: data.category,
+      subtasks: processedSubtasks,
       updatedAt: serverTimestamp(),
     };
+    
     if (data.dueDate === undefined || data.dueDate === null) {
       (updatedTask as any).dueDate = null;
+    } else {
+      updatedTask.dueDate = data.dueDate;
     }
+    
     updateDoc(taskRef, updatedTask).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
         path: taskRef.path,
