@@ -4,7 +4,7 @@ IUUtask is a modern, responsive task management application built with Next.js, 
 
 ## Live Demo
 
-**[🚀 View Live Demo](https://taskmasteryk.netlify.app/)**
+**[🚀 View Live Demo](https://iuutask.netlify.app/)**
 
 ## Screenshots
 
