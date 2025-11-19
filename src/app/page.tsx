@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useFirebase, useFirestore } from "@/firebase/provider";
 import { useCollection } from "@/firebase/firestore/use-collection";
-import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, Timestamp } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, Timestamp, writeBatch, getDocs, query, where } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import type { EditTaskFormValues } from "@/components/edit-task-form";
@@ -71,7 +71,12 @@ export default function Home() {
 
     const sortedTasks = combinedTasks
       .filter(task => task.createdAt)
-      .sort((a,b) => a.createdAt!.toMillis() - b.createdAt!.toMillis());
+      .sort((a,b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.createdAt!.toMillis() - b.createdAt!.toMillis();
+      });
 
     const grouped = sortedTasks.reduce((acc, task) => {
       const category = task.category;
@@ -96,7 +101,14 @@ export default function Home() {
   }
 
   const handleAddTask = async (data: TaskFormValues) => {
-    if (!tasksQuery) return;
+    if (!tasksQuery || !user || !firestore) return;
+
+    // Calculate the max order for the category
+    const categoryTasks = groupedTasks[data.category] || [];
+    const maxOrder = categoryTasks.length > 0 
+      ? Math.max(...categoryTasks.map(t => t.order ?? 0))
+      : 0;
+    const newOrder = maxOrder + 1;
 
     const optimisticId = uuidv4();
     const now = new Date();
@@ -114,6 +126,7 @@ export default function Home() {
         : [],
       createdAt: Timestamp.fromDate(now),
       updatedAt: Timestamp.fromDate(now),
+      order: newOrder,
     };
     
     setOptimisticTasks(prev => [...prev, optimisticTask]);
@@ -126,6 +139,7 @@ export default function Home() {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       subtasks: optimisticTask.subtasks,
+      order: newOrder,
     };
     
     if (data.dueDate) {
@@ -240,6 +254,51 @@ export default function Home() {
     });
   };
 
+  const handleTaskReorder = async (activeId: string, overId: string) => {
+    if (!user || !firestore || activeId === overId) return;
+
+    // Find which category these tasks belong to
+    let category: string | null = null;
+    let categoryTasks: TaskWithId[] = [];
+
+    for (const [cat, tasks] of Object.entries(groupedTasks)) {
+      if (tasks.find(t => t.id === activeId)) {
+        category = cat;
+        categoryTasks = [...tasks];
+        break;
+      }
+    }
+
+    if (!category) return;
+
+    // Find indices
+    const oldIndex = categoryTasks.findIndex(t => t.id === activeId);
+    const newIndex = categoryTasks.findIndex(t => t.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reorder locally
+    const [movedTask] = categoryTasks.splice(oldIndex, 1);
+    categoryTasks.splice(newIndex, 0, movedTask);
+
+    // Assign new order values
+    const batch = writeBatch(firestore);
+    categoryTasks.forEach((task, index) => {
+      const taskRef = doc(firestore, "users", user.uid, "tasks", task.id);
+      batch.update(taskRef, { order: index + 1, updatedAt: serverTimestamp() });
+    });
+
+    try {
+      await batch.commit();
+    } catch (error) {
+      const permissionError = new FirestorePermissionError({
+        path: `users/${user.uid}/tasks`,
+        operation: 'update',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background font-body text-foreground">
        <header className="container mx-auto max-w-7xl px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -283,6 +342,7 @@ export default function Home() {
             onSubtaskToggle={handleToggleSubtask}
             onTaskEdit={handleEditTask} 
             onTaskAdd={handleAddTask}
+            onTaskReorder={handleTaskReorder}
             loading={tasksLoading && optimisticTasks.length === 0} 
           />
         </div>

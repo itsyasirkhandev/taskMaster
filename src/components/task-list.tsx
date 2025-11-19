@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { TaskWithId } from "@/lib/types";
-import { TaskItem } from "@/components/task-item";
+import { SortableTaskItem } from "@/components/sortable-task-item";
 import { CheckCircle2, Plus } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 import type { EditTaskFormValues } from "./edit-task-form";
@@ -11,6 +11,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "./ui/button";
 import { QuickTaskForm } from "./quick-task-form";
 import type { TaskFormValues } from "./task-form";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 interface TaskListProps {
   groupedTasks: Record<string, TaskWithId[]>;
@@ -20,6 +34,7 @@ interface TaskListProps {
   onSubtaskToggle: (task: TaskWithId, subtaskId: string) => void;
   onTaskEdit: (id: string, data: EditTaskFormValues) => void;
   onTaskAdd: (data: TaskFormValues) => void;
+  onTaskReorder: (activeId: string, overId: string) => void;
   loading: boolean;
 }
 
@@ -43,13 +58,20 @@ const categoryConfig: Record<string, { title: string; colors: string }> = {
 }
 
 
-export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit, onTaskAdd, loading }: TaskListProps) {
+export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit, onTaskAdd, onTaskReorder, loading }: TaskListProps) {
   const [dialogStates, setDialogStates] = useState<Record<string, boolean>>({
     "Urgent & Important": false,
     "Unurgent & Important": false,
     "Urgent & Unimportant": false,
     "Unurgent & Unimportant": false,
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handleDialogChange = (category: string, isOpen: boolean) => {
     setDialogStates(prev => ({ ...prev, [category]: isOpen }));
@@ -58,6 +80,14 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
   const handleTaskAdd = (category: string) => (data: TaskFormValues) => {
     onTaskAdd(data);
     handleDialogChange(category, false);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      onTaskReorder(active.id as string, over.id as string);
+    }
   };
   if (loading) {
      return (
@@ -90,43 +120,54 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-      {Object.entries(groupedTasks).map(([category, tasks]) => {
-        const config = categoryConfig[category];
-        return (
-        <div key={category} className={`space-y-4 p-4 rounded-lg border-2 border-dashed h-full ${config.colors}`}>
-          <div className="text-center space-y-3">
-            <h3 className="text-lg font-bold font-headline">{config.title}</h3>
-            <Dialog open={dialogStates[category]} onOpenChange={(isOpen) => handleDialogChange(category, isOpen)}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Task
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add Task to {config.title}</DialogTitle>
-                </DialogHeader>
-                <div className="pt-4">
-                  <QuickTaskForm onTaskAdd={handleTaskAdd(category)} defaultCategory={category} />
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          {tasks.length > 0 ? (
-            <ul role="list" className="space-y-4">
-              {tasks.map((task) => (
-                <TaskItem key={task.id} task={task} onTaskDelete={onTaskDelete} onTaskToggle={onTaskToggle} onSubtaskToggle={onSubtaskToggle} onTaskEdit={onTaskEdit}/>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-center py-8 text-sm text-muted-foreground">
-              <p>No tasks in this category.</p>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        {Object.entries(groupedTasks).map(([category, tasks]) => {
+          const config = categoryConfig[category];
+          return (
+          <div key={category} className={`space-y-4 p-4 rounded-lg border-2 border-dashed h-full ${config.colors}`}>
+            <div className="text-center space-y-3">
+              <h3 className="text-lg font-bold font-headline">{config.title}</h3>
+              <Dialog open={dialogStates[category]} onOpenChange={(isOpen) => handleDialogChange(category, isOpen)}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Task
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Task to {config.title}</DialogTitle>
+                  </DialogHeader>
+                  <div className="pt-4">
+                    <QuickTaskForm onTaskAdd={handleTaskAdd(category)} defaultCategory={category} />
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
-          )}
-        </div>
-      )})}
-    </div>
+            {tasks.length > 0 ? (
+              <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                <ul role="list" className="space-y-4">
+                  {tasks.map((task) => (
+                    <SortableTaskItem 
+                      key={task.id} 
+                      task={task} 
+                      onTaskDelete={onTaskDelete} 
+                      onTaskToggle={onTaskToggle} 
+                      onSubtaskToggle={onSubtaskToggle} 
+                      onTaskEdit={onTaskEdit}
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            ) : (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                <p>No tasks in this category.</p>
+              </div>
+            )}
+          </div>
+        )})}
+      </div>
+    </DndContext>
   );
 }

@@ -14,6 +14,7 @@ export type Task = {
   createdAt: FieldValue;
   updatedAt: FieldValue;
   subtasks: Subtask[];
+  order?: number;
 };
 
 export type TaskWithId = Omit<Task, 'dueDate' | 'createdAt' | 'updatedAt'> & {
@@ -21,6 +22,7 @@ export type TaskWithId = Omit<Task, 'dueDate' | 'createdAt' | 'updatedAt'> & {
     dueDate?: Date;
     createdAt: Timestamp;
     updatedAt: Timestamp;
+    order?: number;
 };
 
 

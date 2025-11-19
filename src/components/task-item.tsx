@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Calendar, Trash2, Pencil } from "lucide-react";
+import { Calendar, Trash2, Pencil, GripVertical } from "lucide-react";
 import type { TaskWithId } from "@/lib/types";
 import {
   Card,
@@ -32,9 +32,14 @@ interface TaskItemProps {
   onTaskToggle: (task: TaskWithId) => void;
   onSubtaskToggle: (task: TaskWithId, subtaskId: string) => void;
   onTaskEdit: (id: string, data: EditTaskFormValues) => void;
+  dragHandleProps?: {
+    attributes: Record<string, unknown>;
+    listeners: Record<string, unknown>;
+  };
+  isDragging?: boolean;
 }
 
-export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit }: TaskItemProps) {
+export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit, dragHandleProps, isDragging }: TaskItemProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleEditSubmit = (data: EditTaskFormValues) => {
@@ -51,10 +56,20 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
   
   return (
     <li role="listitem">
-      <Card className={`transition-all hover:shadow-md ${task.completed ? 'bg-muted/50' : 'bg-card'}`}>
+      <Card className={`transition-all hover:shadow-md ${task.completed ? 'bg-muted/50' : 'bg-card'} ${isDragging ? 'opacity-50' : ''}`}>
         <CardContent className="p-4 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4 flex-1 overflow-hidden">
+              {dragHandleProps && (
+                <button
+                  className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
+                  {...dragHandleProps.attributes}
+                  {...dragHandleProps.listeners}
+                  aria-label="Drag to reorder"
+                >
+                  <GripVertical className="h-5 w-5" />
+                </button>
+              )}
                <Checkbox
                   id={`task-${task.id}`}
                   checked={task.completed}
