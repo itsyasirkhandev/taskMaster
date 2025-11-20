@@ -1,4 +1,4 @@
-# **App Name**: IUUtask
+# **App Name**: IUtasks
 
 ## Core Features:
 

@@ -1,15 +1,15 @@
-# IUUtask - A Next.js & Firebase Task Management App
+# IUtasks - A Next.js & Firebase Task Management App
 
-IUUtask is a modern, responsive task management application built with Next.js, Firebase, and ShadCN UI. It allows users to manage their daily tasks using the Eisenhower Matrix methodology, categorizing them into four quadrants to help prioritize what's most important.
+IUtasks is a modern, responsive task management application built with Next.js, Firebase, and ShadCN UI. It allows users to manage their daily tasks using the Eisenhower Matrix methodology, categorizing them into four quadrants to help prioritize what's most important.
 
 ## Live Demo
 
-**[🚀 View Live Demo](https://iuutask.netlify.app/)**
+**[🚀 View Live Demo](https://iutasks.netlify.app/)**
 
 ## Screenshots
 
 **Main Dashboard**
-![IUUtask Dashboard](https://i.postimg.cc/hGwjfvMz/Screenshot-3-10-2025-101157-basic-taskmanagment-netlify-app.jpg)
+![IUtasks Dashboard](https://i.postimg.cc/hGwjfvMz/Screenshot-3-10-2025-101157-basic-taskmanagment-netlify-app.jpg)
 
 **Task Management**
 ![Task Management](https://i.postimg.cc/yN5dkxn1/Screenshot-3-10-2025-101517-basic-taskmanagment-netlify-app.jpg)

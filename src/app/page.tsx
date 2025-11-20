@@ -303,7 +303,7 @@ export default function Home() {
     <div className="min-h-screen bg-background font-body text-foreground">
        <header className="container mx-auto max-w-7xl px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-center sm:text-left">
-            <h1 className="text-2xl font-headline font-bold tracking-tight">IUUtask</h1>
+            <h1 className="text-2xl font-headline font-bold tracking-tight">IUtasks</h1>
             <p className="text-sm text-muted-foreground">
               Organize your tasks. Achieve your goals.
             </p>
