@@ -10,9 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useFirebase, useFirestore } from "@/firebase/provider";
 import { useCollection } from "@/firebase/firestore/use-collection";
-import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, Timestamp, writeBatch, getDocs, query, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, Timestamp, writeBatch, getDocs, query, where, setDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { useDoc } from "@/firebase/firestore/use-doc";
 import type { EditTaskFormValues } from "@/components/edit-task-form";
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -25,7 +26,8 @@ export default function Home() {
   const firestore = useFirestore();
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const [optimisticTasks, setOptimisticTasks] = useState<TaskWithId[]>([]);
+  const [optimisticTasks, setOptimisticTasks] = useState<Record<string, Partial<TaskWithId> & { _deleted?: boolean }>>({});
+  const [optimisticTaskOrders, setOptimisticTaskOrders] = useState<Record<string, string[]> | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -40,18 +42,14 @@ export default function Home() {
 
   const { data: tasks, loading: tasksLoading } = useCollection(tasksQuery);
   
-  const { groupedTasks, allTasksEmpty } = useMemo(() => {
-    const initialGroupedTasks = {
-      "Urgent & Important": [],
-      "Unurgent & Important": [],
-      "Urgent & Unimportant": [],
-      "Unurgent & Unimportant": [],
-    };
+  const taskOrdersRef = useMemo(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, "users", user.uid, "settings", "task_orders");
+  }, [user, firestore]);
 
-    if (!tasks && optimisticTasks.length === 0) {
-      return { groupedTasks: initialGroupedTasks, allTasksEmpty: true };
-    }
+  const { data: taskOrdersDoc, loading: taskOrdersLoading } = useDoc(taskOrdersRef);
 
+  const { groupedTasks, allTasksEmpty, liveTasks } = useMemo(() => {
     const liveTasks = tasks?.docs
       .map(d => ({
         id: d.id, 
@@ -61,36 +59,48 @@ export default function Home() {
         subtasks: d.data().subtasks || [],
       }))
       .filter(task => task.createdAt) as TaskWithId[] || [];
-    
-    const combinedTasks = [...liveTasks];
-    optimisticTasks.forEach(optTask => {
-      if (!combinedTasks.find(t => t.id === optTask.id)) {
-        combinedTasks.push(optTask);
-      }
+      
+    let combinedTasks = liveTasks
+       .map(t => optimisticTasks[t.id] ? { ...t, ...optimisticTasks[t.id] } as TaskWithId : t)
+       .filter(t => !optimisticTasks[t.id]?._deleted);
+       
+    Object.values(optimisticTasks).forEach(optTask => {
+       if (!liveTasks.find(t => t.id === optTask.id) && !optTask._deleted) {
+           combinedTasks.push(optTask as TaskWithId);
+       }
     });
 
-    const sortedTasks = combinedTasks
-      .filter(task => task.createdAt)
-      .sort((a,b) => {
-        const orderA = a.order ?? 0;
-        const orderB = b.order ?? 0;
-        if (orderA !== orderB) return orderA - orderB;
-        return a.createdAt!.toMillis() - b.createdAt!.toMillis();
-      });
+    const taskOrders = optimisticTaskOrders || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
 
-    const grouped = sortedTasks.reduce((acc, task) => {
+    const grouped = combinedTasks.reduce((acc, task) => {
       const category = task.category;
       if (!acc[category]) {
         acc[category] = [];
       }
       acc[category].push(task);
       return acc;
-    }, initialGroupedTasks as Record<string, TaskWithId[]>);
+    }, {
+      "Urgent & Important": [],
+      "Unurgent & Important": [],
+      "Urgent & Unimportant": [],
+      "Unurgent & Unimportant": [],
+    } as Record<string, TaskWithId[]>);
+
+    for (const category of Object.keys(grouped)) {
+       const orderArray = taskOrders[category] || [];
+       grouped[category].sort((a, b) => {
+         const indexA = orderArray.indexOf(a.id);
+         const indexB = orderArray.indexOf(b.id);
+         if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+         if (indexA !== -1) return -1;
+         if (indexB !== -1) return 1;
+         return a.createdAt!.toMillis() - b.createdAt!.toMillis();
+       });
+    }
 
     const allEmpty = Object.values(grouped).every(arr => arr.length === 0);
-
-    return { groupedTasks: grouped, allTasksEmpty: allEmpty };
-  }, [tasks, optimisticTasks]);
+    return { groupedTasks: grouped, allTasksEmpty: allEmpty, liveTasks };
+  }, [tasks, optimisticTasks, optimisticTaskOrders, taskOrdersDoc]);
 
   if (loading || !user) {
     return (
@@ -102,13 +112,6 @@ export default function Home() {
 
   const handleAddTask = async (data: TaskFormValues) => {
     if (!tasksQuery || !user || !firestore) return;
-
-    // Calculate the max order for the category
-    const categoryTasks = groupedTasks[data.category] || [];
-    const maxOrder = categoryTasks.length > 0 
-      ? Math.max(...categoryTasks.map(t => t.order ?? 0))
-      : 0;
-    const newOrder = maxOrder + 1;
 
     const optimisticId = uuidv4();
     const now = new Date();
@@ -126,31 +129,51 @@ export default function Home() {
         : [],
       createdAt: Timestamp.fromDate(now),
       updatedAt: Timestamp.fromDate(now),
-      order: newOrder,
     };
     
-    setOptimisticTasks(prev => [...prev, optimisticTask]);
+    setOptimisticTasks(prev => ({ ...prev, [optimisticId]: optimisticTask }));
+
+    const currentOrders = optimisticTaskOrders || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
+    const catOrders = [...(currentOrders[data.category] || groupedTasks[data.category].map(t => t.id))];
+    catOrders.push(optimisticId);
+    
+    const newOrders = { ...currentOrders, [data.category]: catOrders };
+    setOptimisticTaskOrders(newOrders);
     setIsAddTaskDialogOpen(false);
 
     const newTask: Partial<Task> & { subtasks?: { id: string; description: string; completed: boolean }[] } = {
       description: data.description,
-      category: data.category,
+      category: data.category as Task['category'],
       completed: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       subtasks: optimisticTask.subtasks,
-      order: newOrder,
     };
     
-    if (data.dueDate) {
-        newTask.dueDate = data.dueDate;
-    }
+    if (data.dueDate) newTask.dueDate = data.dueDate;
+
+    const batch = writeBatch(firestore);
+    const taskRef = doc(firestore, "users", user.uid, "tasks", optimisticId);
+    batch.set(taskRef, newTask);
+
+    const settingsRef = doc(firestore, "users", user.uid, "settings", "task_orders");
+    batch.set(settingsRef, newOrders, { merge: true });
 
     try {
-      const docRef = await addDoc(tasksQuery, newTask);
-      setOptimisticTasks(prev => prev.filter(t => t.id !== optimisticId));
+      await batch.commit();
+      setOptimisticTasks(prev => {
+          const next = { ...prev };
+          delete next[optimisticId];
+          return next;
+      });
+      setOptimisticTaskOrders(null);
     } catch (serverError) {
-      setOptimisticTasks(prev => prev.filter(t => t.id !== optimisticId));
+      setOptimisticTasks(prev => {
+          const next = { ...prev };
+          delete next[optimisticId];
+          return next;
+      });
+      setOptimisticTaskOrders(null);
       const permissionError = new FirestorePermissionError({
         path: tasksQuery.path,
         operation: 'create',
@@ -162,8 +185,48 @@ export default function Home() {
 
   const handleDeleteTask = (id: string) => {
     if (!user || !firestore) return;
+
+    let category: string | null = null;
+    for (const [cat, tasks] of Object.entries(groupedTasks)) {
+      if (tasks.find(t => t.id === id)) {
+        category = cat;
+        break;
+      }
+    }
+
+    setOptimisticTasks(prev => ({ ...prev, [id]: { _deleted: true } }));
+
+    let newOrders: Record<string, string[]> | null = null;
+    if (category) {
+        const currentOrders = optimisticTaskOrders || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
+        const catOrders = (currentOrders[category] || groupedTasks[category].map(t => t.id)).filter((tId: string) => tId !== id);
+        newOrders = { ...currentOrders, [category]: catOrders };
+        setOptimisticTaskOrders(newOrders);
+    }
+
+    const batch = writeBatch(firestore);
     const taskRef = doc(firestore, "users", user.uid, "tasks", id);
-    deleteDoc(taskRef).catch(async (serverError) => {
+    batch.delete(taskRef);
+
+    if (newOrders) {
+        const settingsRef = doc(firestore, "users", user.uid, "settings", "task_orders");
+        batch.set(settingsRef, newOrders, { merge: true });
+    }
+
+    batch.commit().then(() => {
+        setOptimisticTasks(prev => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
+        });
+        setOptimisticTaskOrders(null);
+    }).catch(async (serverError) => {
+      setOptimisticTasks(prev => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+      });
+      setOptimisticTaskOrders(null);
       const permissionError = new FirestorePermissionError({
         path: taskRef.path,
         operation: 'delete',
@@ -233,7 +296,7 @@ export default function Home() {
     
     const updatedTask: Partial<Task> = {
       description: data.description,
-      category: data.category,
+      category: data.category as Task['category'],
       subtasks: processedSubtasks,
       updatedAt: serverTimestamp(),
     };
@@ -254,49 +317,93 @@ export default function Home() {
     });
   };
 
-  const handleTaskReorder = async (activeId: string, overId: string) => {
-    if (!user || !firestore || activeId === overId) return;
+  const handleDragOverCategory = (activeId: string, overId: string, sourceCategory: string, destinationCategory: string) => {
+      if (sourceCategory === destinationCategory) return;
+      
+      setOptimisticTaskOrders((prev) => {
+          const currentOrders = prev || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
+          const sourceArray = [...(currentOrders[sourceCategory] || groupedTasks[sourceCategory].map(t => t.id))];
+          const destArray = [...(currentOrders[destinationCategory] || groupedTasks[destinationCategory].map(t => t.id))];
 
-    // Find which category these tasks belong to
-    let category: string | null = null;
-    let categoryTasks: TaskWithId[] = [];
+          const activeIndex = sourceArray.indexOf(activeId);
+          const overIndex = destArray.indexOf(overId);
 
-    for (const [cat, tasks] of Object.entries(groupedTasks)) {
-      if (tasks.find(t => t.id === activeId)) {
-        category = cat;
-        categoryTasks = [...tasks];
-        break;
-      }
-    }
+          if (activeIndex === -1) return currentOrders;
 
-    if (!category) return;
+          sourceArray.splice(activeIndex, 1);
+          destArray.splice(overIndex >= 0 ? overIndex : destArray.length, 0, activeId);
 
-    // Find indices
-    const oldIndex = categoryTasks.findIndex(t => t.id === activeId);
-    const newIndex = categoryTasks.findIndex(t => t.id === overId);
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    // Reorder locally
-    const [movedTask] = categoryTasks.splice(oldIndex, 1);
-    categoryTasks.splice(newIndex, 0, movedTask);
-
-    // Assign new order values
-    const batch = writeBatch(firestore);
-    categoryTasks.forEach((task, index) => {
-      const taskRef = doc(firestore, "users", user.uid, "tasks", task.id);
-      batch.update(taskRef, { order: index + 1, updatedAt: serverTimestamp() });
-    });
-
-    try {
-      await batch.commit();
-    } catch (error) {
-      const permissionError = new FirestorePermissionError({
-        path: `users/${user.uid}/tasks`,
-        operation: 'update',
+          return {
+              ...currentOrders,
+              [sourceCategory]: sourceArray,
+              [destinationCategory]: destArray
+          };
       });
-      errorEmitter.emit('permission-error', permissionError);
-    }
+
+      setOptimisticTasks(prev => {
+          const existing = prev[activeId] || {};
+          return { ...prev, [activeId]: { ...existing, category: destinationCategory as Task['category'] } };
+      });
+  };
+
+  const handleDragEndCategory = async (activeId: string, overId: string, sourceCategory: string, destinationCategory: string) => {
+      if (!user || !firestore) return;
+
+      const currentOrders = optimisticTaskOrders || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
+      
+      const sourceArray = [...(currentOrders[sourceCategory] || groupedTasks[sourceCategory].map(t => t.id))];
+      const destArray = sourceCategory === destinationCategory ? sourceArray : [...(currentOrders[destinationCategory] || groupedTasks[destinationCategory].map(t => t.id))];
+
+      const activeIndex = sourceArray.indexOf(activeId);
+      const overIndex = destArray.indexOf(overId);
+
+      if (activeIndex === -1) return;
+
+      sourceArray.splice(activeIndex, 1);
+      destArray.splice(overIndex >= 0 ? overIndex : destArray.length, 0, activeId);
+
+      const newOrders = {
+          ...currentOrders,
+          [sourceCategory]: sourceArray,
+          [destinationCategory]: destArray
+      };
+
+      setOptimisticTaskOrders(newOrders);
+      setOptimisticTasks(prev => {
+          const existing = prev[activeId] || {};
+          return { ...prev, [activeId]: { ...existing, category: destinationCategory as Task['category'] } };
+      });
+
+      const batch = writeBatch(firestore);
+      const settingsRef = doc(firestore, "users", user.uid, "settings", "task_orders");
+      batch.set(settingsRef, newOrders, { merge: true });
+
+      if (sourceCategory !== destinationCategory) {
+          const taskRef = doc(firestore, "users", user.uid, "tasks", activeId);
+          batch.update(taskRef, { category: destinationCategory as Task['category'], updatedAt: serverTimestamp() });
+      }
+
+      try {
+          await batch.commit();
+          setOptimisticTaskOrders(null);
+          setOptimisticTasks(prev => {
+              const next = { ...prev };
+              delete next[activeId];
+              return next;
+          });
+      } catch (error) {
+          setOptimisticTaskOrders(null);
+          setOptimisticTasks(prev => {
+              const next = { ...prev };
+              delete next[activeId];
+              return next;
+          });
+          const permissionError = new FirestorePermissionError({
+            path: `users/${user.uid}/settings/task_orders`,
+            operation: 'update',
+          });
+          errorEmitter.emit('permission-error', permissionError);
+      }
   };
 
   return (
@@ -342,8 +449,9 @@ export default function Home() {
             onSubtaskToggle={handleToggleSubtask}
             onTaskEdit={handleEditTask} 
             onTaskAdd={handleAddTask}
-            onTaskReorder={handleTaskReorder}
-            loading={tasksLoading && optimisticTasks.length === 0} 
+            onDragOverCategory={handleDragOverCategory}
+            onDragEndCategory={handleDragEndCategory}
+            loading={tasksLoading} 
           />
         </div>
       </main>
