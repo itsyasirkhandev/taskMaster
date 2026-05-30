@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Calendar, Trash2, Pencil, GripVertical } from "lucide-react";
+import { Calendar, Trash2, Pencil, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
 import type { TaskWithId } from "@/lib/types";
 import {
   Card,
@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { EditTaskForm, type EditTaskFormValues } from "./edit-task-form";
 import { Progress } from "./ui/progress";
 import { Separator } from "./ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface TaskItemProps {
   task: TaskWithId;
@@ -41,6 +42,7 @@ interface TaskItemProps {
 
 export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, onTaskEdit, dragHandleProps, isDragging }: TaskItemProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleEditSubmit = (data: EditTaskFormValues) => {
     onTaskEdit(task.id, data);
@@ -135,22 +137,52 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
                     <Progress value={subtaskProgress} className="h-2" />
                 </div>
                 <div className="space-y-2">
-                {task.subtasks.map(subtask => (
-                    <div key={subtask.id} className="flex items-center gap-3">
-                    <Checkbox
-                        id={`subtask-${subtask.id}`}
-                        checked={subtask.completed}
-                        onCheckedChange={() => onSubtaskToggle(task, subtask.id)}
-                        aria-label={`Mark subtask ${subtask.completed ? 'incomplete' : 'complete'}`}
-                    />
-                    <label
-                        htmlFor={`subtask-${subtask.id}`}
-                        className={`text-sm flex-1 break-words ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
-                    >
-                        {subtask.description}
-                    </label>
-                    </div>
-                ))}
+                  <Collapsible open={isExpanded} onOpenChange={setIsExpanded} className="space-y-2">
+                    {task.subtasks.slice(0, 3).map(subtask => (
+                        <div key={subtask.id} className="flex items-center gap-3">
+                        <Checkbox
+                            id={`subtask-${subtask.id}`}
+                            checked={subtask.completed}
+                            onCheckedChange={() => onSubtaskToggle(task, subtask.id)}
+                            aria-label={`Mark subtask ${subtask.completed ? 'incomplete' : 'complete'}`}
+                        />
+                        <label
+                            htmlFor={`subtask-${subtask.id}`}
+                            className={`text-sm flex-1 break-words ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
+                        >
+                            {subtask.description}
+                        </label>
+                        </div>
+                    ))}
+                    {task.subtasks.length > 3 && (
+                        <CollapsibleContent className="space-y-2 overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                        {task.subtasks.slice(3).map(subtask => (
+                            <div key={subtask.id} className="flex items-center gap-3">
+                            <Checkbox
+                                id={`subtask-${subtask.id}`}
+                                checked={subtask.completed}
+                                onCheckedChange={() => onSubtaskToggle(task, subtask.id)}
+                                aria-label={`Mark subtask ${subtask.completed ? 'incomplete' : 'complete'}`}
+                            />
+                            <label
+                                htmlFor={`subtask-${subtask.id}`}
+                                className={`text-sm flex-1 break-words ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
+                            >
+                                {subtask.description}
+                            </label>
+                            </div>
+                        ))}
+                        </CollapsibleContent>
+                    )}
+                    {task.subtasks.length > 3 && (
+                        <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-foreground mt-1 px-2 -ml-2">
+                            {isExpanded ? "Show less" : `Show ${task.subtasks.length - 3} more`}
+                            {isExpanded ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
+                        </Button>
+                        </CollapsibleTrigger>
+                    )}
+                  </Collapsible>
                 </div>
             </div>
           )}

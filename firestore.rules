@@ -29,5 +29,10 @@ service cloud.firestore {
       // Regular users can only access their own tasks.
       allow read, write, delete: if isAdmin() || (request.auth != null && request.auth.uid == userId);
     }
+
+    // Rules for the 'settings' subcollection
+    match /users/{userId}/settings/{settingId} {
+      allow read, write, delete: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+    }
   }
 }
