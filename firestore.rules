@@ -39,7 +39,8 @@ service cloud.firestore {
     
     // Rules for the root 'journals' collection
     match /journals/{journalId} {
-      allow read, update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.userId);
+      allow list: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow get, update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.userId);
       allow create: if isAdmin() || (request.auth != null && request.auth.uid == request.resource.data.userId);
     }
   }
