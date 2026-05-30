@@ -1,81 +1,33 @@
-/**
- * @fileoverview Firestore Security Rules for Prototyping.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model, ensuring that users can only
- * access their own data. It prioritizes security and simplicity, and only validates
- * critical aspects of the data to allow for flexible schema changes during prototyping.
- *
- * Data Structure:
- * - `/users/{userId}`: Stores public information about a user, accessible only to the
- *   authenticated user with matching `userId`.
- * - `/users/{userId}/tasks/{taskId}`: Stores tasks for a specific user, only accessible
- *   to the user with the matching `userId`.
- *
- * Key Security Decisions:
- * - Users can only access their own user profiles.
- * - Users can only access tasks associated with their user ID.
- * - Data validation is minimal, focusing on relational integrity (e.g., userId matching
- *   the document ID).
- *
- * Denormalization for Authorization:
- * - The security rules rely on the `userId` in the path matching the authenticated
- *   user's UID to ensure ownership. This avoids the need for complex queries or
- *   additional reads.
- *
- * Structural Segregation:
- * - User profiles and tasks are stored under the `/users/{userId}` collection to
- *   enforce privacy and ownership.
- */
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Enforces access control for user profiles. Only the authenticated user can read and write their own profile.
-     * @path /users/{userId}
-     * @allow (get, update, delete) User with uid "user123" can access /users/user123.
-     * @allow (create) User with uid "user123" can create the profile /users/user123.
-     * @deny (get, update, delete) User with uid "user456" cannot access /users/user123.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+    // Function to check if the requesting user has the 'admin' role
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    /**
-     * @description Enforces access control for tasks under a specific user. Only the authenticated user can read and write their own tasks.
-     * @path /users/{userId}/tasks/{taskId}
-     * @allow (create, get, update, delete, list) User with uid "user123" can access /users/user123/tasks/task456.
-     * @deny (create, get, update, delete, list) User with uid "user456" cannot access /users/user123/tasks/task456.
-     * @principle Enforces document ownership for all operations.
-     */
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Admins can read and list all user documents.
+      allow list, read: if isAdmin();
+      
+      // Any authenticated user can create their own user document during signup.
+      allow create: if request.auth != null;
+
+      // Only an admin or the user themselves can read or update their own document.
+      allow read, update: if isAdmin() || request.auth.uid == userId;
+
+      // Only admins can delete user documents.
+      allow delete: if isAdmin();
+    }
+
+    // Rules for the 'tasks' subcollection
     match /users/{userId}/tasks/{taskId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+      // Admins have full access to all tasks.
+      // Regular users can only access their own tasks.
+      allow read, write, delete: if isAdmin() || (request.auth != null && request.auth.uid == userId);
     }
   }
 }

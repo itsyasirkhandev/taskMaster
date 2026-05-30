@@ -33,8 +33,8 @@ interface TaskItemProps {
   onSubtaskToggle: (task: TaskWithId, subtaskId: string) => void;
   onTaskEdit: (id: string, data: EditTaskFormValues) => void;
   dragHandleProps?: {
-    attributes: Record<string, unknown>;
-    listeners: Record<string, unknown>;
+    attributes: any;
+    listeners: any;
   };
   isDragging?: boolean;
 }
