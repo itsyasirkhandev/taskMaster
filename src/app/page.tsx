@@ -346,7 +346,7 @@ export default function Home() {
       });
   };
 
-  const handleDragEndCategory = async (activeId: string, overId: string, sourceCategory: string, destinationCategory: string) => {
+  const handleDragEndCategory = async (activeId: string, overId: string, sourceCategory: string, destinationCategory: string, originalCategory?: string) => {
       if (!user || !firestore) return;
 
       const currentOrders = optimisticTaskOrders || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
@@ -378,7 +378,9 @@ export default function Home() {
       const settingsRef = doc(firestore, "users", user.uid, "settings", "task_orders");
       batch.set(settingsRef, newOrders, { merge: true });
 
-      if (sourceCategory !== destinationCategory) {
+      const categoryChanged = originalCategory ? originalCategory !== destinationCategory : sourceCategory !== destinationCategory;
+
+      if (categoryChanged) {
           const taskRef = doc(firestore, "users", user.uid, "tasks", activeId);
           batch.update(taskRef, { category: destinationCategory as Task['category'], updatedAt: serverTimestamp() });
       }

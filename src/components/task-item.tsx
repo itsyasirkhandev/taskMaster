@@ -139,16 +139,17 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
                 <div className="space-y-2">
                   <Collapsible open={isExpanded} onOpenChange={setIsExpanded} className="space-y-2">
                     {task.subtasks.slice(0, 3).map(subtask => (
-                        <div key={subtask.id} className="flex items-center gap-3">
+                        <div key={subtask.id} className="flex items-start gap-3 w-full">
                         <Checkbox
                             id={`subtask-${subtask.id}`}
                             checked={subtask.completed}
                             onCheckedChange={() => onSubtaskToggle(task, subtask.id)}
                             aria-label={`Mark subtask ${subtask.completed ? 'incomplete' : 'complete'}`}
+                            className="mt-0.5"
                         />
                         <label
                             htmlFor={`subtask-${subtask.id}`}
-                            className={`text-sm flex-1 break-words ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
+                            className={`text-sm flex-1 min-w-0 break-words ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
                         >
                             {subtask.description}
                         </label>
@@ -157,16 +158,17 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
                     {task.subtasks.length > 3 && (
                         <CollapsibleContent className="space-y-2 overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
                         {task.subtasks.slice(3).map(subtask => (
-                            <div key={subtask.id} className="flex items-center gap-3">
+                            <div key={subtask.id} className="flex items-start gap-3 w-full">
                             <Checkbox
                                 id={`subtask-${subtask.id}`}
                                 checked={subtask.completed}
                                 onCheckedChange={() => onSubtaskToggle(task, subtask.id)}
                                 aria-label={`Mark subtask ${subtask.completed ? 'incomplete' : 'complete'}`}
+                                className="mt-0.5"
                             />
                             <label
                                 htmlFor={`subtask-${subtask.id}`}
-                                className={`text-sm flex-1 break-words ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
+                                className={`text-sm flex-1 min-w-0 break-words ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
                             >
                                 {subtask.description}
                             </label>

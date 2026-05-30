@@ -37,7 +37,7 @@ interface TaskListProps {
   onTaskEdit: (id: string, data: EditTaskFormValues) => void;
   onTaskAdd: (data: TaskFormValues) => void;
   onDragOverCategory: (activeId: string, overId: string, sourceCategory: string, destinationCategory: string) => void;
-  onDragEndCategory: (activeId: string, overId: string, sourceCategory: string, destinationCategory: string) => void;
+  onDragEndCategory: (activeId: string, overId: string, sourceCategory: string, destinationCategory: string, originalCategory?: string) => void;
   loading: boolean;
 }
 
@@ -116,6 +116,7 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
+    const draggedTask = activeTask;
     setActiveTask(null);
     if (!over) return;
 
@@ -127,7 +128,7 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
 
     if (!activeContainer || !overContainer) return;
 
-    onDragEndCategory(activeId, overId, activeContainer, overContainer);
+    onDragEndCategory(activeId, overId, activeContainer, overContainer, draggedTask?.category);
   };
   if (loading) {
      return (
