@@ -94,7 +94,9 @@ export default function Home() {
          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
          if (indexA !== -1) return -1;
          if (indexB !== -1) return 1;
-         return a.createdAt!.toMillis() - b.createdAt!.toMillis();
+         const timeA = a.createdAt?.toMillis?.() || 0;
+         const timeB = b.createdAt?.toMillis?.() || 0;
+         return timeA - timeB;
        });
     }
 
@@ -342,7 +344,7 @@ export default function Home() {
 
       setOptimisticTasks(prev => {
           const existing = prev[activeId] || {};
-          return { ...prev, [activeId]: { ...existing, category: destinationCategory as Task['category'] } };
+          return { ...prev, [activeId]: { ...existing, id: activeId, category: destinationCategory as Task['category'] } };
       });
   };
 
@@ -371,7 +373,7 @@ export default function Home() {
       setOptimisticTaskOrders(newOrders);
       setOptimisticTasks(prev => {
           const existing = prev[activeId] || {};
-          return { ...prev, [activeId]: { ...existing, category: destinationCategory as Task['category'] } };
+          return { ...prev, [activeId]: { ...existing, id: activeId, category: destinationCategory as Task['category'] } };
       });
 
       const batch = writeBatch(firestore);
