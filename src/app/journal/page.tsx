@@ -5,9 +5,18 @@ import { useFirestore } from "@/firebase/provider"
 import { useCollection } from "@/firebase/firestore/use-collection"
 import { collection, deleteDoc, doc, query, where, Timestamp } from "firebase/firestore"
 import { useRouter } from "next/navigation"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Plus, Edit2, Trash2, ArrowLeft } from "lucide-react"
 import { Loader } from "@/components/loader"
 import Link from "next/link"
@@ -17,6 +26,9 @@ export default function JournalListPage() {
   const { user, loading } = useUser()
   const firestore = useFirestore()
   const router = useRouter()
+
+  const [journalToDelete, setJournalToDelete] = useState<JournalWithId | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const journalsQuery = useMemo(() => {
     if (!user || !firestore) return null
@@ -46,13 +58,16 @@ export default function JournalListPage() {
       return timeB - timeA;
   });
 
-  const handleDelete = async (id: string) => {
-     if (!confirm("Are you sure you want to delete this journal entry?")) return;
-     if (!firestore) return;
+  const handleDeleteConfirm = async () => {
+     if (!journalToDelete || !firestore) return;
+     setIsDeleting(true);
      try {
-         await deleteDoc(doc(firestore, "journals", id));
+         await deleteDoc(doc(firestore, "journals", journalToDelete.id));
+         setJournalToDelete(null);
      } catch (e) {
          console.error("Failed to delete journal", e);
+     } finally {
+         setIsDeleting(false);
      }
   }
 
@@ -110,7 +125,7 @@ export default function JournalListPage() {
                        <Edit2 className="h-4 w-4" />
                      </Button>
                    </Link>
-                   <Button variant="destructive" size="sm" onClick={() => handleDelete(journal.id)}>
+                   <Button variant="destructive" size="sm" onClick={() => setJournalToDelete(journal)}>
                      <Trash2 className="h-4 w-4" />
                    </Button>
                  </CardFooter>
@@ -118,6 +133,33 @@ export default function JournalListPage() {
              ))}
            </div>
         )}
+
+        <AlertDialog open={!!journalToDelete} onOpenChange={(open) => {
+          if (!open && !isDeleting) setJournalToDelete(null);
+        }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete '{journalToDelete?.title}'? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <Button
+                variant="destructive"
+                disabled={isDeleting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDeleteConfirm();
+                }}
+              >
+                {isDeleting ? <Loader className="mr-2 h-4 w-4" /> : null}
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   )
