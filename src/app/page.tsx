@@ -19,6 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { Loader } from "@/components/loader";
+import { arrayMove } from "@dnd-kit/sortable";
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -353,16 +354,28 @@ export default function Home() {
 
       const currentOrders = optimisticTaskOrders || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
       
-      const sourceArray = [...(currentOrders[sourceCategory] || groupedTasks[sourceCategory].map(t => t.id))];
-      const destArray = sourceCategory === destinationCategory ? sourceArray : [...(currentOrders[destinationCategory] || groupedTasks[destinationCategory].map(t => t.id))];
+      let sourceArray = [...(currentOrders[sourceCategory] || groupedTasks[sourceCategory].map(t => t.id))];
+      let destArray = sourceCategory === destinationCategory ? sourceArray : [...(currentOrders[destinationCategory] || groupedTasks[destinationCategory].map(t => t.id))];
 
       const activeIndex = sourceArray.indexOf(activeId);
       const overIndex = destArray.indexOf(overId);
 
       if (activeIndex === -1) return;
 
-      sourceArray.splice(activeIndex, 1);
-      destArray.splice(overIndex >= 0 ? overIndex : destArray.length, 0, activeId);
+      if (sourceCategory === destinationCategory) {
+          if (activeIndex !== overIndex && overIndex !== -1) {
+              sourceArray = arrayMove(sourceArray, activeIndex, overIndex);
+              destArray = sourceArray;
+          } else if (overIndex === -1 && overId === destinationCategory) {
+              // dropped on empty space in same category, push to end
+              sourceArray.splice(activeIndex, 1);
+              sourceArray.push(activeId);
+              destArray = sourceArray;
+          }
+      } else {
+          sourceArray.splice(activeIndex, 1);
+          destArray.splice(overIndex >= 0 ? overIndex : destArray.length, 0, activeId);
+      }
 
       const newOrders = {
           ...currentOrders,
