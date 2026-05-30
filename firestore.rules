@@ -34,5 +34,15 @@ service cloud.firestore {
     match /users/{userId}/settings/{settingId} {
       allow read, write, delete: if isAdmin() || (request.auth != null && request.auth.uid == userId);
     }
+    
+    // Rules for the root 'journals' collection
+    match /journals/{journalId} {
+      // Admins have full access
+      allow read, write, delete: if isAdmin();
+      
+      // Users can only access their own journals
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
   }
 }
