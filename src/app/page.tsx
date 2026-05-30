@@ -35,7 +35,6 @@ export default function Home() {
       router.push('/auth');
     }
   }, [user, loading, router]);
-
   const tasksQuery = useMemo(() => {
     if (!user || !firestore) return null;
     return collection(firestore, "users", user.uid, "tasks");
@@ -49,6 +48,21 @@ export default function Home() {
   }, [user, firestore]);
 
   const { data: taskOrdersDoc, loading: taskOrdersLoading } = useDoc(taskOrdersRef);
+
+  useEffect(() => {
+    if (taskOrdersDoc?.exists() && optimisticTaskOrders) {
+      const dbOrders = taskOrdersDoc.data() as Record<string, string[]>;
+      
+      const isSynced = Object.keys(optimisticTaskOrders).every(category => {
+        const opt = optimisticTaskOrders[category] || [];
+        const db = dbOrders[category] || [];
+        return opt.length === db.length && opt.every((val, index) => val === db[index]);
+      });
+      if (isSynced) {
+        setOptimisticTaskOrders(null);
+      }
+    }
+  }, [taskOrdersDoc, optimisticTaskOrders]);
 
   const { groupedTasks, allTasksEmpty, liveTasks } = useMemo(() => {
     const liveTasks = tasks?.docs
@@ -169,7 +183,6 @@ export default function Home() {
           delete next[optimisticId];
           return next;
       });
-      setOptimisticTaskOrders(null);
     } catch (serverError) {
       setOptimisticTasks(prev => {
           const next = { ...prev };
@@ -222,7 +235,6 @@ export default function Home() {
             delete next[id];
             return next;
         });
-        setOptimisticTaskOrders(null);
     }).catch(async (serverError) => {
       setOptimisticTasks(prev => {
           const next = { ...prev };
@@ -323,19 +335,19 @@ export default function Home() {
   const handleDragOverCategory = (activeId: string, overId: string, sourceCategory: string, destinationCategory: string) => {
       if (sourceCategory === destinationCategory) return;
       
+      const sourceArray = groupedTasks[sourceCategory].map(t => t.id);
+      const destArray = groupedTasks[destinationCategory].map(t => t.id);
+
+      const activeIndex = sourceArray.indexOf(activeId);
+      const overIndex = destArray.indexOf(overId);
+
+      if (activeIndex === -1) return;
+
+      sourceArray.splice(activeIndex, 1);
+      destArray.splice(overIndex >= 0 ? overIndex : destArray.length, 0, activeId);
+
       setOptimisticTaskOrders((prev) => {
           const currentOrders = prev || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
-          const sourceArray = [...(currentOrders[sourceCategory] || groupedTasks[sourceCategory].map(t => t.id))];
-          const destArray = [...(currentOrders[destinationCategory] || groupedTasks[destinationCategory].map(t => t.id))];
-
-          const activeIndex = sourceArray.indexOf(activeId);
-          const overIndex = destArray.indexOf(overId);
-
-          if (activeIndex === -1) return currentOrders;
-
-          sourceArray.splice(activeIndex, 1);
-          destArray.splice(overIndex >= 0 ? overIndex : destArray.length, 0, activeId);
-
           return {
               ...currentOrders,
               [sourceCategory]: sourceArray,
@@ -354,8 +366,10 @@ export default function Home() {
 
       const currentOrders = optimisticTaskOrders || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
       
-      let sourceArray = [...(currentOrders[sourceCategory] || groupedTasks[sourceCategory].map(t => t.id))];
-      let destArray = sourceCategory === destinationCategory ? sourceArray : [...(currentOrders[destinationCategory] || groupedTasks[destinationCategory].map(t => t.id))];
+      let sourceArray = groupedTasks[sourceCategory].map(t => t.id);
+      let destArray = sourceCategory === destinationCategory 
+          ? sourceArray 
+          : groupedTasks[destinationCategory].map(t => t.id);
 
       const activeIndex = sourceArray.indexOf(activeId);
       const overIndex = destArray.indexOf(overId);
@@ -402,7 +416,6 @@ export default function Home() {
 
       try {
           await batch.commit();
-          setOptimisticTaskOrders(null);
           setOptimisticTasks(prev => {
               const next = { ...prev };
               delete next[activeId];
@@ -414,7 +427,7 @@ export default function Home() {
               const next = { ...prev };
               delete next[activeId];
               return next;
-          });
+            });
           const permissionError = new FirestorePermissionError({
             path: `users/${user.uid}/settings/task_orders`,
             operation: 'update',
