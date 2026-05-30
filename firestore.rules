@@ -12,14 +12,19 @@ service cloud.firestore {
 
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Admins can read and list all user documents.
-      allow list, read: if isAdmin();
+      allow list: if isAdmin();
+      allow get: if isAdmin() || request.auth.uid == userId;
       
-      // Any authenticated user can create their own user document during signup.
-      allow create: if request.auth != null;
+      // Users can only create their own document, and CANNOT self-assign the 'admin' role.
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId
+                    && request.resource.data.get('role', '') != 'admin';
 
-      // Only an admin or the user themselves can read or update their own document.
-      allow read, update: if isAdmin() || request.auth.uid == userId;
+      // Users can update their own document, but CANNOT self-assign the 'admin' role.
+      allow update: if isAdmin() || (
+                      request.auth.uid == userId 
+                      && request.resource.data.get('role', '') != 'admin'
+                    );
 
       // Only admins can delete user documents.
       allow delete: if isAdmin();
