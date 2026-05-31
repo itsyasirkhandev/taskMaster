@@ -17,11 +17,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Plus, Edit2, Trash2, ArrowLeft } from "lucide-react"
+import { Plus, Edit2, Trash2, ArrowLeft, SearchX, CalendarIcon } from "lucide-react"
 import { Loader } from "@/components/loader"
 import Link from "next/link"
 import type { JournalWithId } from "@/lib/types"
-import { slugify } from "@/lib/utils"
+import { slugify, cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { DateRange } from "react-day-picker"
+import { startOfDay, endOfDay, format } from "date-fns"
 
 export default function JournalListPage() {
   const { user, loading } = useUser()
@@ -30,6 +35,8 @@ export default function JournalListPage() {
 
   const [journalToDelete, setJournalToDelete] = useState<JournalWithId | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const journalsQuery = useMemo(() => {
     if (!user || !firestore) return null
@@ -59,6 +66,32 @@ export default function JournalListPage() {
       return timeB - timeA;
   });
 
+  const filteredJournals = useMemo(() => {
+    return journals.filter((journal) => {
+      // Search Matching
+      const queryStr = searchQuery.toLowerCase()
+      const matchesSearch = !queryStr || 
+        journal.title?.toLowerCase().includes(queryStr) ||
+        journal.description?.toLowerCase().includes(queryStr) ||
+        journal.tags?.some(tag => tag.toLowerCase().includes(queryStr))
+
+      // Date Matching
+      let matchesDate = true
+      if (dateRange?.from) {
+        const journalDate = journal.createdAt?.toDate()
+        if (journalDate) {
+           if (dateRange.to) {
+              matchesDate = journalDate >= startOfDay(dateRange.from) && journalDate <= endOfDay(dateRange.to)
+           } else {
+              matchesDate = journalDate >= startOfDay(dateRange.from)
+           }
+        }
+      }
+
+      return matchesSearch && matchesDate
+    })
+  }, [journals, searchQuery, dateRange])
+
   const handleDeleteConfirm = async () => {
      if (!journalToDelete || !firestore) return;
      setIsDeleting(true);
@@ -75,14 +108,57 @@ export default function JournalListPage() {
   return (
     <main className="container mx-auto max-w-7xl px-2 md:px-4 py-4 md:py-8">
       {/* Header Actions */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h2 className="text-xl md:text-2xl font-headline font-bold">Your Journals</h2>
-        <Link href="/journal/create">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Entry
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+           <Input
+             placeholder="Search journals..."
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+             className="w-full md:w-auto md:max-w-xs"
+           />
+           <Popover>
+             <PopoverTrigger asChild>
+               <Button
+                 variant="outline"
+                 className={cn(
+                   "justify-start text-left font-normal w-full md:w-auto",
+                   !dateRange && "text-muted-foreground"
+                 )}
+               >
+                 <CalendarIcon className="mr-2 h-4 w-4" />
+                 {dateRange?.from ? (
+                   dateRange.to ? (
+                     <>
+                       {format(dateRange.from, "LLL dd, y")} -{" "}
+                       {format(dateRange.to, "LLL dd, y")}
+                     </>
+                   ) : (
+                     format(dateRange.from, "LLL dd, y")
+                   )
+                 ) : (
+                   <span>Pick a date range</span>
+                 )}
+               </Button>
+             </PopoverTrigger>
+             <PopoverContent className="w-auto p-0" align="end">
+               <Calendar
+                 initialFocus
+                 mode="range"
+                 defaultMonth={dateRange?.from}
+                 selected={dateRange}
+                 onSelect={setDateRange}
+                 numberOfMonths={2}
+               />
+             </PopoverContent>
+           </Popover>
+          <Link href="/journal/create" className="w-full md:w-auto">
+            <Button className="w-full">
+              <Plus className="mr-2 h-4 w-4" />
+              New Entry
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {journalsLoading ? (
@@ -97,9 +173,25 @@ export default function JournalListPage() {
              </Button>
            </Link>
          </div>
+      ) : filteredJournals.length === 0 ? (
+         <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-4">
+           <SearchX className="h-12 w-12 text-muted-foreground/50" />
+           <p>No journals match your filters.</p>
+           <div className="flex gap-2">
+             <Button variant="outline" onClick={() => { setSearchQuery(""); setDateRange(undefined); }}>
+               Clear Filters
+             </Button>
+             <Link href="/journal/create">
+               <Button>
+                 <Plus className="mr-2 h-4 w-4" />
+                 Create New Entry
+               </Button>
+             </Link>
+           </div>
+         </div>
       ) : (
          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {journals.map(journal => (
+            {filteredJournals.map(journal => (
               <Card key={journal.id} className="flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/40 group relative overflow-hidden">
                 <Link 
                   href={`/journal/${journal.id}/${slugify(journal.title)}`} 
