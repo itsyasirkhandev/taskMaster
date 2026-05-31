@@ -117,7 +117,7 @@ export default function JournalListPage() {
              placeholder="Search journals..."
              value={searchQuery}
              onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full md:w-auto md:max-w-xs"
+             className="w-full md:w-64 focus:md:w-96 transition-all duration-300"
            />
            <div className="flex gap-2 w-full md:w-auto">
              <Popover>
