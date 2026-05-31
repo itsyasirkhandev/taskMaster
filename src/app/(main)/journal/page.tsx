@@ -161,7 +161,7 @@ export default function JournalListPage() {
                 handleDeleteConfirm();
               }}
             >
-              {isDeleting ? <Loader size="sm" className="mr-2" /> : null}
+              {isDeleting ? <Loader size="sm" className="mr-2" showText={false} /> : null}
               Delete
             </Button>
           </AlertDialogFooter>

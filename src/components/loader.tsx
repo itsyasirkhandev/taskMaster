@@ -9,6 +9,7 @@ export interface LoaderProps {
   text?: string;
   intervalMs?: number;
   size?: "sm" | "md" | "lg" | "xl" | "custom";
+  showText?: boolean;
 }
 
 const DEFAULT_MESSAGES = [
@@ -40,6 +41,7 @@ export function Loader({
   text,
   intervalMs = 2500,
   size = "md",
+  showText = true,
 }: LoaderProps) {
   const [messageIndex, setMessageIndex] = useState(0);
 
@@ -77,7 +79,7 @@ export function Loader({
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         ></path>
       </svg>
-      {displayMessage && (
+      {showText && displayMessage && (
         <p className="text-sm text-muted-foreground mt-4 text-center">
           {displayMessage}
         </p>
