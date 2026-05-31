@@ -168,7 +168,7 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-start">
         {Object.entries(groupedTasks).map(([category, tasks]) => {
           const config = categoryConfig[category];
           return (
@@ -216,7 +216,7 @@ function TaskColumn({ category, config, tasks, isDialogOpen, onDialogChange, onT
   });
 
   return (
-    <div ref={setNodeRef} className={`space-y-4 p-4 rounded-lg border-2 border-dashed h-full ${config.colors}`}>
+    <div ref={setNodeRef} className={`space-y-3 p-2 md:space-y-4 md:p-4 rounded-lg border-2 border-dashed h-full ${config.colors}`}>
       <div className="text-center space-y-3">
         <h3 className="text-lg font-bold font-headline">{config.title}</h3>
         <Dialog open={isDialogOpen} onOpenChange={onDialogChange}>
@@ -238,7 +238,7 @@ function TaskColumn({ category, config, tasks, isDialogOpen, onDialogChange, onT
       </div>
       {tasks.length > 0 ? (
         <SortableContext id={category} items={tasks.map((t: any) => t.id)} strategy={verticalListSortingStrategy}>
-          <ul role="list" className="space-y-4 min-h-[50px]">
+          <ul role="list" className="space-y-3 md:space-y-4 min-h-[50px]">
             {tasks.map((task: any) => (
               <SortableTaskItem 
                 key={task.id} 

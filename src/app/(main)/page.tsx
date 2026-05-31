@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useFirebase, useFirestore } from "@/firebase/provider";
+import { MobileFab } from "@/components/navigation/mobile-fab";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, Timestamp, writeBatch, getDocs, query, where, setDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -437,57 +438,44 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background font-body text-foreground">
-        <header className="container mx-auto max-w-7xl px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="text-center sm:text-left">
-            <h1 className="text-2xl font-headline font-bold tracking-tight">IUtasks</h1>
-            <p className="text-sm text-muted-foreground">
-              Organize your tasks. Achieve your goals.
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => router.push('/journal')}>
-              Journals
+    <main className="container mx-auto max-w-7xl px-2 md:px-4 py-4 md:py-8">
+      {/* Desktop Actions */}
+      <div className="hidden md:flex justify-end mb-6">
+        <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Task
             </Button>
-            <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Task
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add a New Task</DialogTitle>
-                </DialogHeader>
-                <div className="pt-4">
-                  <TaskForm onTaskAdd={handleAddTask} />
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Avatar>
-              <AvatarImage src={user.photoURL ?? ''} />
-              <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <Button variant="outline" onClick={() => auth.signOut()}>Sign Out</Button>
-          </div>
-        </header>
-      <main className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
-        <div className="mt-2">
-          <TaskList 
-            groupedTasks={groupedTasks} 
-            allTasksEmpty={allTasksEmpty}
-            onTaskDelete={handleDeleteTask} 
-            onTaskToggle={handleToggleTask} 
-            onSubtaskToggle={handleToggleSubtask}
-            onTaskEdit={handleEditTask} 
-            onTaskAdd={handleAddTask}
-            onDragOverCategory={handleDragOverCategory}
-            onDragEndCategory={handleDragEndCategory}
-            loading={tasksLoading} 
-          />
-        </div>
-      </main>
-    </div>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add a New Task</DialogTitle>
+            </DialogHeader>
+            <div className="pt-4">
+              <TaskForm onTaskAdd={handleAddTask} />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="mt-2">
+        <TaskList 
+          groupedTasks={groupedTasks} 
+          allTasksEmpty={allTasksEmpty}
+          onTaskDelete={handleDeleteTask} 
+          onTaskToggle={handleToggleTask} 
+          onSubtaskToggle={handleToggleSubtask}
+          onTaskEdit={handleEditTask} 
+          onTaskAdd={handleAddTask}
+          onDragOverCategory={handleDragOverCategory}
+          onDragEndCategory={handleDragEndCategory}
+          loading={tasksLoading} 
+        />
+      </div>
+      
+      {/* Mobile Add Task FAB */}
+      <MobileFab onTaskAdd={handleAddTask} />
+    </main>
   );
 }
