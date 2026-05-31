@@ -19,18 +19,18 @@ const DEFAULT_MESSAGES = [
 ];
 
 const sizeClasses = {
-  sm: "w-6 h-6",
-  md: "w-12 h-12",
-  lg: "w-20 h-20",
-  xl: "w-32 h-32",
+  sm: "w-5 h-5",
+  md: "w-8 h-8",
+  lg: "w-14 h-14",
+  xl: "w-20 h-20",
   custom: "w-full h-full",
 };
 
 const strokeWidths = {
   sm: 4,
-  md: 3,
-  lg: 2.5,
-  xl: 2,
+  md: 3.5,
+  lg: 3,
+  xl: 2.5,
   custom: 3,
 };
 
