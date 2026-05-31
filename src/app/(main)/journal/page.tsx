@@ -48,23 +48,21 @@ export default function JournalListPage() {
 
   const { data: journalsData, loading: journalsLoading } = useCollection(journalsQuery)
 
-  if (loading || !user) {
-     return <div className="min-h-screen flex items-center justify-center"><Loader size="xl" /></div>
-  }
-
-  const journals = journalsData?.docs.map(d => ({
-     id: d.id,
-     ...d.data(),
-     createdAt: d.data().createdAt as Timestamp,
-     updatedAt: d.data().updatedAt as Timestamp,
-  })) as JournalWithId[] || []
-  
-  // Sort by createdAt desc in memory to avoid composite index requirement
-  journals.sort((a, b) => {
-      const timeA = a.createdAt?.toMillis() || 0;
-      const timeB = b.createdAt?.toMillis() || 0;
-      return timeB - timeA;
-  });
+  const journals = useMemo(() => {
+    const data = journalsData?.docs.map(d => ({
+       id: d.id,
+       ...d.data(),
+       createdAt: d.data().createdAt as Timestamp,
+       updatedAt: d.data().updatedAt as Timestamp,
+    })) as JournalWithId[] || []
+    
+    // Sort by createdAt desc in memory to avoid composite index requirement
+    return data.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis() || 0;
+        const timeB = b.createdAt?.toMillis() || 0;
+        return timeB - timeA;
+    });
+  }, [journalsData])
 
   const filteredJournals = useMemo(() => {
     return journals.filter((journal) => {
@@ -91,6 +89,10 @@ export default function JournalListPage() {
       return matchesSearch && matchesDate
     })
   }, [journals, searchQuery, dateRange])
+
+  if (loading || !user) {
+     return <div className="min-h-screen flex items-center justify-center"><Loader size="xl" /></div>
+  }
 
   const handleDeleteConfirm = async () => {
      if (!journalToDelete || !firestore) return;
