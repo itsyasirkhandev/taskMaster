@@ -8,6 +8,7 @@ export interface LoaderProps {
   messages?: string[];
   text?: string;
   intervalMs?: number;
+  size?: "sm" | "md" | "lg" | "xl" | "custom";
 }
 
 const DEFAULT_MESSAGES = [
@@ -17,11 +18,28 @@ const DEFAULT_MESSAGES = [
   "Almost there...",
 ];
 
+const sizeClasses = {
+  sm: "w-6 h-6",
+  md: "w-12 h-12",
+  lg: "w-20 h-20",
+  xl: "w-32 h-32",
+  custom: "w-full h-full",
+};
+
+const strokeWidths = {
+  sm: 4,
+  md: 3,
+  lg: 2.5,
+  xl: 2,
+  custom: 3,
+};
+
 export function Loader({
   className,
   messages = DEFAULT_MESSAGES,
   text,
   intervalMs = 2500,
+  size = "md",
 }: LoaderProps) {
   const [messageIndex, setMessageIndex] = useState(0);
 
@@ -40,7 +58,7 @@ export function Loader({
   return (
     <div className={cn("flex flex-col items-center justify-center", className)}>
       <svg
-        className="animate-spin text-primary w-16 h-16"
+        className={cn("animate-spin text-primary", sizeClasses[size])}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -51,7 +69,7 @@ export function Loader({
           cy="12"
           r="10"
           stroke="currentColor"
-          strokeWidth="4"
+          strokeWidth={strokeWidths[size]}
         ></circle>
         <path
           className="opacity-75"
@@ -67,4 +85,5 @@ export function Loader({
     </div>
   );
 }
+
 

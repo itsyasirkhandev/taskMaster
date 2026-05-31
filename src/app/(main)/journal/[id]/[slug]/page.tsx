@@ -41,7 +41,7 @@ export default function JournalDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader className="h-12 w-12" />
+        <Loader size="xl" />
       </div>
     )
   }

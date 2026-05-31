@@ -42,7 +42,7 @@ export default function JournalListPage() {
   const { data: journalsData, loading: journalsLoading } = useCollection(journalsQuery)
 
   if (loading || !user) {
-     return <div className="min-h-screen flex items-center justify-center"><Loader className="h-12 w-12" /></div>
+     return <div className="min-h-screen flex items-center justify-center"><Loader size="xl" /></div>
   }
 
   const journals = journalsData?.docs.map(d => ({
@@ -86,7 +86,7 @@ export default function JournalListPage() {
       </div>
 
       {journalsLoading ? (
-         <div className="flex justify-center"><Loader className="h-8 w-8" /></div>
+         <div className="flex justify-center"><Loader size="lg" /></div>
       ) : journals.length === 0 ? (
          <div className="text-center py-12 text-muted-foreground">
            No journal entries found. Create your first one!
@@ -155,7 +155,7 @@ export default function JournalListPage() {
                 handleDeleteConfirm();
               }}
             >
-              {isDeleting ? <Loader className="mr-2 h-4 w-4" /> : null}
+              {isDeleting ? <Loader size="sm" className="mr-2" /> : null}
               Delete
             </Button>
           </AlertDialogFooter>

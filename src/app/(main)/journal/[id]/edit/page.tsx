@@ -26,7 +26,7 @@ export default function EditJournalPage() {
   const { data: journalDoc, loading } = useDoc(docRef)
 
   if (loading) {
-     return <div className="min-h-screen flex items-center justify-center"><Loader className="h-12 w-12" /></div>
+     return <div className="min-h-screen flex items-center justify-center"><Loader size="xl" /></div>
   }
 
   if (!journalDoc || !journalDoc.exists()) {

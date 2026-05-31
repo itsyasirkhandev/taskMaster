@@ -72,18 +72,18 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
                   <GripVertical className="h-5 w-5" />
                 </button>
               )}
-               <div className="flex items-start mt-1 min-h-[44px]">
-                 <Checkbox
-                    id={`task-${task.id}`}
-                    checked={task.completed}
-                    onCheckedChange={handleMainCheckboxChange}
-                    aria-label={`Mark task ${task.completed ? 'incomplete' : 'complete'}`}
-                  />
-               </div>
-              <div className="space-y-1 md:space-y-2 flex-1 overflow-hidden py-1">
-                <label htmlFor={`task-${task.id}`} className={`font-medium text-sm md:text-base text-card-foreground break-words cursor-pointer ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.description}</label>
+              <div className="flex-1 flex flex-col gap-1 overflow-hidden">
+                <div className="flex items-center gap-2 md:gap-4 min-h-[44px]">
+                  <Checkbox
+                     id={`task-${task.id}`}
+                     checked={task.completed}
+                     onCheckedChange={handleMainCheckboxChange}
+                     aria-label={`Mark task ${task.completed ? 'incomplete' : 'complete'}`}
+                   />
+                  <label htmlFor={`task-${task.id}`} className={`font-medium text-sm md:text-base text-card-foreground break-words cursor-pointer py-1 flex-1 ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.description}</label>
+                </div>
                 {task.dueDate && (
-                    <div className="flex items-center text-[10px] md:text-sm text-muted-foreground">
+                    <div className="flex items-center text-[10px] md:text-sm text-muted-foreground pl-6 md:pl-8">
                       <Calendar className="mr-1.5 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                       <span>{format(task.dueDate, "PPP")}</span>
                     </div>
@@ -140,41 +140,37 @@ export function TaskItem({ task, onTaskDelete, onTaskToggle, onSubtaskToggle, on
                 <div className="space-y-2">
                   <Collapsible open={isExpanded} onOpenChange={setIsExpanded} className="space-y-2">
                     {task.subtasks.slice(0, 3).map(subtask => (
-                        <div key={subtask.id} className="flex items-start gap-2 md:gap-3 w-full min-h-[44px] py-1">
-                        <div className="mt-0.5">
+                        <div key={subtask.id} className="flex items-center gap-2 md:gap-3 w-full min-h-[44px] py-1">
                           <Checkbox
                               id={`subtask-${subtask.id}`}
                               checked={subtask.completed}
                               onCheckedChange={() => onSubtaskToggle(task, subtask.id)}
                               aria-label={`Mark subtask ${subtask.completed ? 'incomplete' : 'complete'}`}
                           />
-                        </div>
-                        <label
-                            htmlFor={`subtask-${subtask.id}`}
-                            className={`text-xs md:text-sm flex-1 min-w-0 break-words cursor-pointer pt-0.5 ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
-                        >
-                            {subtask.description}
-                        </label>
+                          <label
+                              htmlFor={`subtask-${subtask.id}`}
+                              className={`text-xs md:text-sm flex-1 min-w-0 break-words cursor-pointer ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
+                          >
+                              {subtask.description}
+                          </label>
                         </div>
                     ))}
                     {task.subtasks.length > 3 && (
                         <CollapsibleContent className="space-y-2 overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
                         {task.subtasks.slice(3).map(subtask => (
-                            <div key={subtask.id} className="flex items-start gap-2 md:gap-3 w-full min-h-[44px] py-1">
-                            <div className="mt-0.5">
+                            <div key={subtask.id} className="flex items-center gap-2 md:gap-3 w-full min-h-[44px] py-1">
                               <Checkbox
                                   id={`subtask-${subtask.id}`}
                                   checked={subtask.completed}
                                   onCheckedChange={() => onSubtaskToggle(task, subtask.id)}
                                   aria-label={`Mark subtask ${subtask.completed ? 'incomplete' : 'complete'}`}
                               />
-                            </div>
-                            <label
-                                htmlFor={`subtask-${subtask.id}`}
-                                className={`text-xs md:text-sm flex-1 min-w-0 break-words cursor-pointer pt-0.5 ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
-                            >
-                                {subtask.description}
-                            </label>
+                              <label
+                                  htmlFor={`subtask-${subtask.id}`}
+                                  className={`text-xs md:text-sm flex-1 min-w-0 break-words cursor-pointer ${subtask.completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
+                              >
+                                  {subtask.description}
+                              </label>
                             </div>
                         ))}
                         </CollapsibleContent>

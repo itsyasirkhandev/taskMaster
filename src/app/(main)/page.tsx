@@ -123,7 +123,7 @@ export default function Home() {
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-background font-body text-foreground flex items-center justify-center">
-        <Loader className="h-12 w-12" />
+        <Loader size="xl" />
       </div>
     );
   }
