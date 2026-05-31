@@ -6,8 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function slugify(text: string): string {
-  return text
+  const slug = text
     .toString()
+    .normalize("NFKD")              // Normalize unicode characters
+    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
     .toLowerCase()
     .trim()
     .replace(/\s+/g, "-")           // Replace spaces with -
@@ -15,5 +17,7 @@ export function slugify(text: string): string {
     .replace(/\-\-+/g, "-")         // Replace multiple - with single -
     .replace(/^-+/, "")             // Trim - from start of text
     .replace(/-+$/, "");            // Trim - from end of text
+    
+  return slug || "untitled";
 }
 
