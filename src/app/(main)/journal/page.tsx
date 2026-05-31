@@ -119,41 +119,55 @@ export default function JournalListPage() {
              onChange={(e) => setSearchQuery(e.target.value)}
              className="w-full md:w-auto md:max-w-xs"
            />
-           <Popover>
-             <PopoverTrigger asChild>
-               <Button
-                 variant="outline"
-                 className={cn(
-                   "justify-start text-left font-normal w-full md:w-auto",
-                   !dateRange && "text-muted-foreground"
-                 )}
-               >
-                 <CalendarIcon className="mr-2 h-4 w-4" />
-                 {dateRange?.from ? (
-                   dateRange.to ? (
-                     <>
-                       {format(dateRange.from, "LLL dd, y")} -{" "}
-                       {format(dateRange.to, "LLL dd, y")}
-                     </>
-                   ) : (
-                     format(dateRange.from, "LLL dd, y")
-                   )
-                 ) : (
-                   <span>Pick a date range</span>
-                 )}
-               </Button>
-             </PopoverTrigger>
-             <PopoverContent className="w-auto p-0" align="end">
-               <Calendar
-                 initialFocus
-                 mode="range"
-                 defaultMonth={dateRange?.from}
-                 selected={dateRange}
-                 onSelect={setDateRange}
-                 numberOfMonths={2}
-               />
-             </PopoverContent>
-           </Popover>
+           <div className="flex gap-2 w-full md:w-auto">
+             <Popover>
+               <PopoverTrigger asChild>
+                 <Button
+                   variant="outline"
+                   className={cn(
+                     "justify-start text-left font-normal w-full md:w-[140px]",
+                     !dateRange?.from && "text-muted-foreground"
+                   )}
+                 >
+                   <CalendarIcon className="mr-2 h-4 w-4" />
+                   {dateRange?.from ? format(dateRange.from, "LLL dd, y") : <span>Start Date</span>}
+                 </Button>
+               </PopoverTrigger>
+               <PopoverContent className="w-auto p-0" align="end">
+                 <Calendar
+                   initialFocus
+                   mode="single"
+                   defaultMonth={dateRange?.from}
+                   selected={dateRange?.from}
+                   onSelect={(date) => setDateRange(prev => ({ from: date, to: prev?.to }))}
+                 />
+               </PopoverContent>
+             </Popover>
+             
+             <Popover>
+               <PopoverTrigger asChild>
+                 <Button
+                   variant="outline"
+                   className={cn(
+                     "justify-start text-left font-normal w-full md:w-[140px]",
+                     !dateRange?.to && "text-muted-foreground"
+                   )}
+                 >
+                   <CalendarIcon className="mr-2 h-4 w-4" />
+                   {dateRange?.to ? format(dateRange.to, "LLL dd, y") : <span>End Date</span>}
+                 </Button>
+               </PopoverTrigger>
+               <PopoverContent className="w-auto p-0" align="end">
+                 <Calendar
+                   initialFocus
+                   mode="single"
+                   defaultMonth={dateRange?.to || dateRange?.from}
+                   selected={dateRange?.to}
+                   onSelect={(date) => setDateRange(prev => ({ from: prev?.from, to: date }))}
+                 />
+               </PopoverContent>
+             </Popover>
+           </div>
           <Link href="/journal/create" className="w-full md:w-auto">
             <Button className="w-full">
               <Plus className="mr-2 h-4 w-4" />
