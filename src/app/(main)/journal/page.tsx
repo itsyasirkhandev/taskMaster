@@ -88,8 +88,14 @@ export default function JournalListPage() {
       {journalsLoading ? (
          <div className="flex justify-center"><Loader size="lg" /></div>
       ) : journals.length === 0 ? (
-         <div className="text-center py-12 text-muted-foreground">
-           No journal entries found. Create your first one!
+         <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-4">
+           <p>No journal entries found. Create your first one!</p>
+           <Link href="/journal/create">
+             <Button>
+               <Plus className="mr-2 h-4 w-4" />
+               Create Entry
+             </Button>
+           </Link>
          </div>
       ) : (
          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
