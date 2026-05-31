@@ -149,7 +149,7 @@ export default function JournalListPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete '{journalToDelete?.title}'? This action cannot be undone.
+                Are you sure you want to delete &apos;{journalToDelete?.title}&apos;? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

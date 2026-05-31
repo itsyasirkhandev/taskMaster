@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Loader } from "@/components/loader"
 import { ArrowLeft, Edit2 } from "lucide-react"
 import Link from "next/link"
-import type { Journal } from "@/lib/types"
+import type { Journal, JournalWithId } from "@/lib/types"
 
 export default function JournalDetailPage() {
   const params = useParams()
@@ -65,7 +65,10 @@ export default function JournalDetailPage() {
     )
   }
 
-  const journalData = journalDoc.data() as Journal
+  const journalData = {
+    id,
+    ...journalDoc.data()
+  } as JournalWithId
 
   if (journalData.userId !== user?.uid) {
     return (
