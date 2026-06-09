@@ -58,6 +58,10 @@ const categoryConfig: Record<string, { title: string; colors: string }> = {
     title: "Not Urgent & Not Important",
     colors: "border-muted-foreground/50",
   },
+  "Completed": {
+    title: "Completed",
+    colors: "border-green-500/50 bg-green-500/5 dark:bg-green-500/10",
+  }
 }
 
 
@@ -68,6 +72,7 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
     "Unurgent & Important": false,
     "Urgent & Unimportant": false,
     "Unurgent & Unimportant": false,
+    "Completed": false,
   });
 
   const sensors = useSensors(
@@ -168,8 +173,8 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-start">
-        {Object.entries(groupedTasks).map(([category, tasks]) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-start mb-8">
+        {Object.entries(groupedTasks).filter(([cat]) => cat !== "Completed").map(([category, tasks]) => {
           const config = categoryConfig[category];
           return (
             <TaskColumn 
@@ -188,6 +193,25 @@ export function TaskList({ groupedTasks, allTasksEmpty, onTaskDelete, onTaskTogg
           );
         })}
       </div>
+      
+      {/* Completed Column */}
+      {groupedTasks["Completed"] && (
+        <div className="grid grid-cols-1 mt-8">
+          <TaskColumn 
+            key="Completed"
+            category="Completed"
+            config={categoryConfig["Completed"]}
+            tasks={groupedTasks["Completed"]}
+            isDialogOpen={dialogStates["Completed"]}
+            onDialogChange={(isOpen: boolean) => handleDialogChange("Completed", isOpen)}
+            onTaskAdd={handleTaskAdd("Completed")}
+            onTaskDelete={onTaskDelete}
+            onTaskToggle={onTaskToggle}
+            onSubtaskToggle={onSubtaskToggle}
+            onTaskEdit={onTaskEdit}
+          />
+        </div>
+      )}
       <DragOverlay>
         {activeTask ? (
           <TaskItem 

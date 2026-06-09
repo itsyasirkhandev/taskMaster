@@ -39,6 +39,7 @@ const formSchema = z.object({
   category: z.string({
     required_error: "Please select a category.",
   }),
+  columnState: z.enum(["Active", "Completed"]).optional().default("Active"),
   subtasks: z.array(subtaskSchema).optional()
 })
 
@@ -56,6 +57,7 @@ export function QuickTaskForm({ onTaskAdd, defaultCategory }: QuickTaskFormProps
     defaultValues: {
       description: "",
       category: defaultCategory,
+      columnState: defaultCategory === "Completed" ? "Completed" : "Active",
       subtasks: [],
     },
   })
@@ -67,7 +69,7 @@ export function QuickTaskForm({ onTaskAdd, defaultCategory }: QuickTaskFormProps
 
   function onSubmit(data: QuickTaskFormValues) {
     onTaskAdd(data);
-    form.reset({ category: defaultCategory, subtasks: [] });
+    form.reset({ category: defaultCategory, columnState: defaultCategory === "Completed" ? "Completed" : "Active", subtasks: [] });
     toast({
       title: "Success!",
       description: "Your new task has been added.",

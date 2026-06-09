@@ -42,6 +42,7 @@ const formSchema = z.object({
   category: z.string({
     required_error: "Please select a category.",
   }),
+  columnState: z.enum(["Active", "Completed"]).optional().default("Active"),
   subtasks: z.array(subtaskSchema).optional()
 })
 
@@ -61,6 +62,7 @@ export function EditTaskForm({ task, onTaskEdit, onClose }: EditTaskFormProps) {
       description: task.description,
       dueDate: task.dueDate,
       category: task.category,
+      columnState: task.columnState || "Active",
       subtasks: task.subtasks || [],
     },
   })
@@ -112,6 +114,27 @@ export function EditTaskForm({ task, onTaskEdit, onClose }: EditTaskFormProps) {
                   <SelectItem value="Unurgent & Important">Unurgent & Important</SelectItem>
                   <SelectItem value="Urgent & Unimportant">Urgent & Unimportant</SelectItem>
                   <SelectItem value="Unurgent & Unimportant">Unurgent & Unimportant</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="columnState"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />

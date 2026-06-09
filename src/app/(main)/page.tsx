@@ -89,7 +89,7 @@ export default function Home() {
     const taskOrders = optimisticTaskOrders || (taskOrdersDoc?.exists() ? taskOrdersDoc.data() : {});
 
     const grouped = combinedTasks.reduce((acc, task) => {
-      const category = task.category;
+      const category = task.columnState === "Completed" ? "Completed" : task.category;
       if (!acc[category]) {
         acc[category] = [];
       }
@@ -100,6 +100,7 @@ export default function Home() {
       "Unurgent & Important": [],
       "Urgent & Unimportant": [],
       "Unurgent & Unimportant": [],
+      "Completed": [],
     } as Record<string, TaskWithId[]>);
 
     for (const category of Object.keys(grouped)) {
@@ -138,6 +139,7 @@ export default function Home() {
       id: optimisticId,
       description: data.description,
       category: data.category as TaskWithId['category'],
+      columnState: (data as any).columnState || "Active",
       completed: false,
       dueDate: data.dueDate,
       subtasks: data.subtasks 
@@ -162,6 +164,7 @@ export default function Home() {
     const newTask: Partial<Task> & { subtasks?: { id: string; description: string; completed: boolean }[] } = {
       description: data.description,
       category: data.category as Task['category'],
+      columnState: (data as any).columnState || "Active",
       completed: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -313,6 +316,7 @@ export default function Home() {
     const updatedTask: Partial<Task> = {
       description: data.description,
       category: data.category as Task['category'],
+      columnState: (data as any).columnState || "Active",
       subtasks: processedSubtasks,
       updatedAt: serverTimestamp(),
     };
@@ -358,7 +362,9 @@ export default function Home() {
 
       setOptimisticTasks(prev => {
           const existing = prev[activeId] || {};
-          return { ...prev, [activeId]: { ...existing, id: activeId, category: destinationCategory as Task['category'] } };
+          const newCategory = destinationCategory === "Completed" ? existing.category : destinationCategory as Task['category'];
+          const newColumnState = destinationCategory === "Completed" ? "Completed" : "Active";
+          return { ...prev, [activeId]: { ...existing, id: activeId, category: newCategory, columnState: newColumnState } };
       });
   };
 
@@ -401,7 +407,11 @@ export default function Home() {
       setOptimisticTaskOrders(newOrders);
       setOptimisticTasks(prev => {
           const existing = prev[activeId] || {};
-          return { ...prev, [activeId]: { ...existing, id: activeId, category: destinationCategory as Task['category'] } };
+          const newCategory = destinationCategory === "Completed" ? existing.category : destinationCategory as Task['category'];
+          const newColumnState = destinationCategory === "Completed" ? "Completed" : "Active";
+          // If moved into completed, mark completed
+          const isCompleted = destinationCategory === "Completed" ? true : existing.completed;
+          return { ...prev, [activeId]: { ...existing, id: activeId, category: newCategory, columnState: newColumnState, completed: isCompleted } };
       });
 
       const batch = writeBatch(firestore);
@@ -412,7 +422,18 @@ export default function Home() {
 
       if (categoryChanged) {
           const taskRef = doc(firestore, "users", user.uid, "tasks", activeId);
-          batch.update(taskRef, { category: destinationCategory as Task['category'], updatedAt: serverTimestamp() });
+          
+          let updateData: Partial<Task> = { updatedAt: serverTimestamp() };
+          
+          if (destinationCategory === "Completed") {
+             updateData.columnState = "Completed";
+             updateData.completed = true;
+          } else {
+             updateData.columnState = "Active";
+             updateData.category = destinationCategory as Task['category'];
+          }
+          
+          batch.update(taskRef, updateData);
       }
 
       try {

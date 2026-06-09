@@ -12,6 +12,7 @@ export type Task = {
   dueDate?: Date | FieldValue;
   completed: boolean;
   category: "Urgent & Important" | "Unurgent & Important" | "Urgent & Unimportant" | "Unurgent & Unimportant";
+  columnState?: "Active" | "Completed";
   createdAt: FieldValue;
   updatedAt: FieldValue;
   subtasks: Subtask[];

@@ -40,6 +40,7 @@ const formSchema = z.object({
   category: z.string({
     required_error: "Please select a category.",
   }),
+  columnState: z.enum(["Active", "Completed"]).optional().default("Active"),
   subtasks: z.array(subtaskSchema).optional()
 })
 
@@ -55,6 +56,7 @@ export function TaskForm({ onTaskAdd }: TaskFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       description: "",
+      columnState: "Active",
       subtasks: [],
     },
   })
